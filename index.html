@@ -1,322 +1,169 @@
 <!doctype html>
-<html lang="ja">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RM500 Graph Main v24</title>
+<title>RM500 Graph Logger v26</title>
+
 <style>
-body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
+body{margin:0;background:#f5f5f5;font-family:-apple-system,Arial;color:#222}
 header{background:#222;color:#fff;padding:16px}
-h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.85;margin-top:4px}
-.card{background:#fff;margin:10px;padding:12px;border-radius:14px;border:1px solid #ddd}
-button{font-size:15px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff}
-button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a}button.r{background:#9b1c1c}
-input,select{font-size:15px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px;background:#fff}
-input{width:76px}.wide{width:190px}
-#time{font-size:48px;font-weight:800;text-align:center;margin:8px}
-svg{width:100%;height:430px;background:#fff;border:1px solid #ddd;border-radius:10px}
-.small{font-size:12px;color:#666;line-height:1.5}
-.row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.pill{display:inline-block;background:#eee;border-radius:999px;padding:4px 8px;font-size:12px;margin:2px}
-.metric{display:inline-block;min-width:125px;background:#f3f3f3;border-radius:10px;padding:8px;margin:4px;font-size:13px}
-.metric b{font-size:16px}.warn{color:#9b1c1c;font-weight:bold}
-.refbox{background:#eef3ff;border:1px solid #c8d7ff;border-radius:10px;padding:8px;margin-top:8px;font-size:13px}
-.log{font-size:13px;line-height:1.6;max-height:160px;overflow:auto;background:#fafafa;border-radius:10px;padding:8px}
+h1{margin:0;font-size:20px}
+.card{background:#fff;margin:10px;padding:12px;border-radius:12px;border:1px solid #ddd}
+button{padding:10px;margin:3px;border:0;border-radius:8px;background:#222;color:#fff}
+input{padding:8px;margin:3px;border:1px solid #ccc;border-radius:6px;width:70px}
+#time{font-size:42px;text-align:center;margin:10px}
+svg{width:100%;height:420px;background:#fff;border:1px solid #ddd;border-radius:10px}
 </style>
 </head>
+
 <body>
+
 <header>
-<h1>RM500 ã­ã¼ã¹ãã­ã¬ã¼ Graph Main v24</h1>
-<div class="sub">è¡¨ãªã / ãã©ã¼ã å¥åã¡ã¤ã³ / BTã»ã¹ã ã¼ãºRoRã»ç«åã»é¢¨éã°ã©ãè¡¨ç¤º</div>
+<h1>RM500 Roast Logger</h1>
 </header>
 
 <div class="card">
-è±å <input id="bean" class="wide" placeholder="ä¾ Ethiopia">
-æå¥é <input id="dose" type="number" placeholder="g">
-æå¥æ¸©åº¦ <input id="charge" type="number" placeholder="â">
-<br>ãã­ãã¡ã¤ã«å <input id="pname" class="wide" placeholder="ä¾ 2026-04-28 Ethiopia">
-</div>
-
-<div class="card">
 <div id="time">00:00</div>
-<button onclick="startTimer()">ã¹ã¿ã¼ã</button>
-<button class="b" onclick="pauseTimer()">ä¸æåæ­¢</button>
-<button class="b" onclick="resetTimer()">ãªã»ãã</button>
-<button onclick="adjustTime(-10)">â10ç§</button>
-<button onclick="adjustTime(10)">ï¼10ç§</button>
-<div id="msg" class="small">æºåOK</div>
+<button onclick="start()">Start</button>
+<button onclick="pause()">Pause</button>
+<button onclick="reset()">Reset</button>
+<button onclick="shift(-10)">-10s</button>
+<button onclick="shift(10)">+10s</button>
 </div>
 
 <div class="card">
-BTè±æ¸© <input id="bt" type="number" step="1">
-ç«å <input id="pw" type="number" step="5">
-é¢¨é <input id="fan" type="number" step="5">
-<button onclick="savePoint()">ç¾å¨æå»ã«è¨é²</button>
-<div class="small">ãã©ã¼ã å¥åãã¡ã¤ã³ã«è¨é²ãã¾ããBTã»ç«åã»é¢¨éãã°ã©ãã¸å³åæ ãããRoRã¯èªåè¨ç®ï¼ã¹ã ã¼ãºåãã¾ãã</div>
+BT <input id="bt">
+Power <input id="pw">
+Fan <input id="fan">
+<button onclick="save()">Save</button>
 </div>
 
-<div class="card">
-<button class="e" onclick="saveEvent('æå¥')">æå¥</button>
-<button class="e" onclick="saveEvent('ããã ')">ããã </button>
-<button class="e" onclick="saveEvent('GC')">GC</button>
-<button class="e" onclick="saveEvent('1ãã¼')">1ãã¼</button>
-<button class="e" onclick="saveEvent('æåº')">æåº</button>
-<button onclick="downloadCSV()">CSVä¿å­</button>
-</div>
-
-<div class="card">
-<span class="pill">é»ç·ï¼BT</span>
-<span class="pill">é»ç¹ç·ï¼RoRã¹ã ã¼ãº</span>
-<span class="pill">ç´°ç·ï¼ç«å</span>
-<span class="pill">ç ´ç·ï¼é¢¨é</span>
-<span class="pill">ç¹ï¼BTæ¸©åº¦è¡¨ç¤º</span>
-<svg id="graph" viewBox="0 0 760 430"></svg>
-</div>
-
-<div class="card">
-<b>RM500 åæ</b><br>
-<span class="metric">Drying<br><small>æå¥âGC</small><br><b id="dryM">-</b></span>
-<span class="metric">Maillard<br><small>GCâ1ãã¼</small><br><b id="maiM">-</b></span>
-<span class="metric">Development<br><small>1ãã¼âæåº</small><br><b id="devM">-</b></span>
-<span class="metric">DTR<br><small>ããã­ããã¡ã³ãæ¯ç</small><br><b id="dtrM">-</b></span>
-<span class="metric">Total Time<br><small>ç·ççæé</small><br><b id="totalM">-</b></span>
-<span class="metric">Drop Temp<br><small>æåºæ¸©åº¦</small><br><b id="dropM">-</b></span>
-<div class="small" id="analysisNote">æå¥ / GC / 1ãã¼ / æåºãè¨é²ããã¨èªåè¨ç®ãã¾ãã</div>
-</div>
-
-<div class="card">
-<div class="row">
-<button class="g" onclick="saveProfile()">ãã­ãã¡ã¤ã«ä¿å­</button>
-<select id="profileList" class="wide"></select>
-<button onclick="loadProfile()">å¼åº</button>
-<button onclick="setReference()">åºæºã«è¨­å®</button>
-<button class="b" onclick="clearReference()">åºæºè§£é¤</button>
-<button class="r" onclick="deleteProfile()">åé¤</button>
-</div>
-<div class="refbox" id="refStatus">åºæºãã­ãã¡ã¤ã«ï¼ãªã</div>
-</div>
-
-<div class="card">
-<b>è¨é²ã­ã°</b>
-<div class="log" id="log"></div>
-</div>
+<svg id="g" viewBox="0 0 760 420"></svg>
 
 <script>
-const PROFILE_KEY='rm500_graph_main_profiles_v24';
-const REF_KEY='rm500_graph_main_reference_v24';
-let rows=[],reference=null,referenceName='',running=false,startedAt=0,baseSec=0,timer=null;
+let data=[];
+let run=false,startT=0,base=0;
 
-function $(id){return document.getElementById(id)}
-function pad(n){return String(n).padStart(2,'0')}
-function fmt(s){s=Math.max(0,Math.floor(s));return pad(Math.floor(s/60))+':'+pad(s%60)}
-function nowSec(){return running ? baseSec + Math.floor((Date.now()-startedAt)/1000) : baseSec}
-function showMsg(t){$('msg').innerText=t}
-function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
-function sortRows(){rows.sort((a,b)=>a.t-b.t)}
+function now(){return run?base+Math.floor((Date.now()-startT)/1000):base}
+function fmt(s){let m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+":"+String(sec).padStart(2,'0')}
 
-function getOrCreateRow(t){
-  t=Math.max(0,Math.floor(t));
-  let r=rows.find(x=>x.t===t);
-  if(!r){r={t:t,bt:'',pw:'',fan:'',ev:'',note:''};rows.push(r);sortRows()}
-  return r;
+function start(){if(run)return;run=true;startT=Date.now();loop()}
+function pause(){base=now();run=false}
+function reset(){base=0;run=false;data=[];draw()}
+
+function shift(d){base=Math.max(0,now()+d);startT=Date.now()}
+
+function loop(){
+document.getElementById("time").innerText=fmt(now())
+if(run)requestAnimationFrame(loop)
+draw()
 }
 
-function updateAll(){ $('time').innerText=fmt(nowSec()); updateAnalysis(); drawGraph(); renderLog(); }
-function updateLight(){ $('time').innerText=fmt(nowSec()); drawGraph(); }
-
-function startTimer(){ if(running)return; running=true; startedAt=Date.now(); clearInterval(timer); timer=setInterval(updateLight,500); updateAll(); showMsg('ã¿ã¤ãã¼éå§'); }
-function pauseTimer(){ baseSec=nowSec(); running=false; clearInterval(timer); updateAll(); showMsg('ä¸æåæ­¢'); }
-function resetTimer(){ if(!confirm('è¨é²ããªã»ãããã¾ããï¼'))return; baseSec=0; running=false; clearInterval(timer); rows=[]; updateAll(); showMsg('ãªã»ãããã¾ãã'); }
-function adjustTime(delta){ baseSec=Math.max(0,nowSec()+delta); startedAt=Date.now(); updateAll(); showMsg((delta>0?'+':'')+delta+'ç§'); }
-
-function savePoint(){
-  const t=Math.floor(nowSec());
-  const bt=$('bt').value, pw=$('pw').value, fan=$('fan').value;
-  if(bt==='' && pw==='' && fan===''){showMsg('BTã»ç«åã»é¢¨éã®ã©ãããå¥åãã¦ãã ãã');return}
-  const r=getOrCreateRow(t);
-  if(bt!=='')r.bt=bt;
-  if(pw!=='')r.pw=pw;
-  if(fan!=='')r.fan=fan;
-  $('bt').value=''; $('pw').value=''; $('fan').value='';
-  updateAll(); showMsg(fmt(t)+' ã«è¨é²ãã¾ãã');
+function save(){
+let t=now()
+let bt=parseFloat(btEl.value)
+let pw=parseFloat(pwEl.value)
+let fan=parseFloat(fanEl.value)
+if(isNaN(bt)&&isNaN(pw)&&isNaN(fan))return
+data.push({t,bt,pw,fan})
+btEl.value="";pwEl.value="";fanEl.value=""
 }
 
-function saveEvent(name){
-  const t=Math.floor(nowSec());
-  rows.forEach(r=>{if(r.ev)r.ev=r.ev.split('/').filter(x=>x!==name).join('/')});
-  const r=getOrCreateRow(t);
-  r.ev=r.ev?r.ev+'/'+name:name;
-  updateAll(); showMsg(name+'ã '+fmt(t)+' ã«è¨é²');
+const btEl=document.getElementById("bt")
+const pwEl=document.getElementById("pw")
+const fanEl=document.getElementById("fan")
+
+function ror(i){
+if(i<1)return null
+let a=data[i],b=data[i-1]
+if(isNaN(a.bt)||isNaN(b.bt))return null
+let dt=(a.t-b.t)/60
+if(dt<=0)return null
+return (a.bt-b.bt)/dt
 }
 
-function btRows(arr=rows){return arr.filter(r=>!isNaN(parseFloat(r.bt))).sort((a,b)=>a.t-b.t)}
-function rawRorPoints(arr=rows){
-  const pts=btRows(arr), out=[];
-  for(let i=1;i<pts.length;i++){
-    const dt=(pts[i].t-pts[i-1].t)/60;
-    if(dt<=0)continue;
-    out.push({t:pts[i].t,ror:(parseFloat(pts[i].bt)-parseFloat(pts[i-1].bt))/dt});
-  }
-  return out;
+function smooth(i){
+let vals=[]
+for(let j=i-1;j<=i+1;j++){
+if(j>=0&&j<data.length){
+let r=ror(j)
+if(r!==null)vals.push(r)
 }
-function smoothRorPoints(arr=rows){
-  const raw=rawRorPoints(arr), out=[];
-  for(let i=0;i<raw.length;i++){
-    let vals=[];
-    for(let j=Math.max(0,i-1);j<=Math.min(raw.length-1,i+1);j++)vals.push(raw[j].ror);
-    out.push({t:raw[i].t,ror:vals.reduce((a,b)=>a+b,0)/vals.length});
-  }
-  return out;
 }
-function rorAtRow(row, arr=rows){
-  const sm=smoothRorPoints(arr);
-  const p=sm.find(x=>x.t===row.t);
-  return p?p.ror:'';
+if(!vals.length)return null
+return vals.reduce((a,b)=>a+b,0)/vals.length
 }
 
-function eventTime(name, arr=rows){const r=arr.find(x=>(x.ev||'').includes(name));return r?r.t:null}
-function eventTemp(name, arr=rows){const r=arr.find(x=>(x.ev||'').includes(name));if(!r)return null;const v=parseFloat(r.bt);return isNaN(v)?null:v}
-function phase(){
-  let charge=eventTime('æå¥'); const gc=eventTime('GC'), fc=eventTime('1ãã¼'), drop=eventTime('æåº');
-  if(charge===null)charge=0;
-  if(gc!==null && fc!==null && drop!==null && drop>0)return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
-  return null;
+function draw(){
+let c=document.getElementById("g")
+let ctx=c.getContext("2d")
+ctx.clearRect(0,0,c.width,c.height)
+
+if(data.length<2)return
+
+let maxT=Math.max(...data.map(d=>d.t),600)
+
+let x=t=>t/maxT*c.width
+let yBT=v=>c.height-(v/230*c.height)
+let yROR=v=>c.height-(Math.min(30,v)/30*c.height)
+let yP=v=>c.height-(v/100*c.height)
+
+ctx.lineWidth=2
+
+// BT
+ctx.beginPath()
+data.forEach((d,i)=>{
+if(isNaN(d.bt))return
+if(i==0)ctx.moveTo(x(d.t),yBT(d.bt))
+else ctx.lineTo(x(d.t),yBT(d.bt))
+})
+ctx.stroke()
+
+// BT label
+data.forEach(d=>{
+if(!isNaN(d.bt)){
+ctx.fillText(Math.round(d.bt),x(d.t)+4,yBT(d.bt)-4)
 }
+})
 
-function updateAnalysis(){
-  const p=phase(), drop=eventTime('æåº'), dropT=eventTemp('æåº');
-  $('totalM').innerText=drop!==null?fmt(drop):'-';
-  $('dropM').innerText=dropT!==null?dropT.toFixed(1)+'â':'-';
-  if(!p){
-    $('dryM').innerText='-'; $('maiM').innerText='-'; $('devM').innerText='-'; $('dtrM').innerText='-';
-    $('analysisNote').innerText='æå¥ / GC / 1ãã¼ / æåºãè¨é²ããã¨èªåè¨ç®ãã¾ãã'; return;
-  }
-  const dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
-  $('dryM').innerText=fmt(p.dry)+' / '+dryP.toFixed(0)+'%';
-  $('maiM').innerText=fmt(p.mai)+' / '+maiP.toFixed(0)+'%';
-  $('devM').innerText=fmt(p.dev)+' / '+devP.toFixed(0)+'%';
-  $('dtrM').innerText=devP.toFixed(1)+'%';
-  let notes=[];
-  if(devP<10)notes.push('DTRä½ã'); if(devP>20)notes.push('DTRé«ã'); if(dryP>65)notes.push('ãã©ã¤é·ã'); if(maiP<20)notes.push('ã¡ã¤ã©ã¼ãç­ã');
-  $('analysisNote').innerHTML=notes.length?'<span class="warn">'+notes.join(' / ')+'</span>':'ãã§ã¼ãºãã©ã³ã¹ã¯èª­ã¿ãããç¯å²ã§ãã';
+// ROR smooth
+ctx.beginPath()
+data.forEach((d,i)=>{
+let r=smooth(i)
+if(r===null)return
+if(i==0)ctx.moveTo(x(d.t),yROR(r))
+else ctx.lineTo(x(d.t),yROR(r))
+})
+ctx.setLineDash([5,5])
+ctx.stroke()
+ctx.setLineDash([])
+
+// Power
+ctx.beginPath()
+data.forEach((d,i)=>{
+if(isNaN(d.pw))return
+if(i==0)ctx.moveTo(x(d.t),yP(d.pw))
+else ctx.lineTo(x(d.t),yP(d.pw))
+})
+ctx.strokeStyle="#444"
+ctx.stroke()
+ctx.strokeStyle="#000"
+
+// Fan
+ctx.beginPath()
+data.forEach((d,i)=>{
+if(isNaN(d.fan))return
+if(i==0)ctx.moveTo(x(d.t),yP(d.fan))
+else ctx.lineTo(x(d.t),yP(d.fan))
+})
+ctx.setLineDash([3,3])
+ctx.strokeStyle="#999"
+ctx.stroke()
+ctx.setLineDash([])
+ctx.strokeStyle="#000"
 }
-
-function drawGraph(){
-  const W=760,H=430,L=45,R=15,T=24,B=78,gw=W-L-R,gh=H-T-B;
-  const maxRowT=rows.length?Math.max(...rows.map(r=>r.t)):0;
-  const maxRefT=reference?.rows?.length?Math.max(...reference.rows.map(r=>r.t||0)):0;
-  const maxSec=Math.max(600,nowSec(),maxRowT,maxRefT);
-  const x=t=>L+gw*t/maxSec, yBT=v=>T+gh*(1-v/230), yRor=v=>T+gh*(1-Math.max(0,Math.min(30,v))/30), yPct=v=>T+gh*(1-Math.max(0,Math.min(100,v))/100);
-  let s=`<rect width="${W}" height="${H}" fill="white"/><path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
-  for(let temp=0;temp<=230;temp+=10){
-    const yy=yBT(temp);
-    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eee"/>`;
-    if(temp%20===0 || temp===230)s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${temp}</text>`;
-  }
-  for(let t=0;t<=maxSec;t+=60){
-    s+=`<line x1="${x(t)}" y1="${H-B}" x2="${x(t)}" y2="${H-B+7}" stroke="#999"/>`;
-    s+=`<text x="${x(t)-8}" y="${H-B+28}" font-size="12" fill="#666">${Math.floor(t/60)}</text>`;
-  }
-
-  if(reference?.rows){
-    const refPts=btRows(reference.rows);
-    if(refPts.length){
-      const d=refPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yBT(parseFloat(p.bt))).join(' ');
-      s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".35" fill="none"/>`;
-    }
-  }
-
-  const pts=btRows(rows);
-  if(pts.length){
-    const d=pts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yBT(parseFloat(p.bt))).join(' ');
-    s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;
-    pts.forEach(p=>{
-      const bt=parseFloat(p.bt);
-      s+=`<circle cx="${x(p.t)}" cy="${yBT(bt)}" r="4" fill="#222"/>`;
-      s+=`<text x="${x(p.t)+5}" y="${yBT(bt)-6}" font-size="11" fill="#222">${bt.toFixed(0)}</text>`;
-    });
-  }
-
-  const rorPts=smoothRorPoints(rows);
-  if(rorPts.length){
-    const d=rorPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yRor(p.ror)).join(' ');
-    s+=`<path d="${d}" stroke="#777" stroke-width="2" stroke-dasharray="5 4" fill="none"/>`;
-    s+=`<text x="${W-105}" y="18" font-size="12" fill="#777">RoR smooth</text>`;
-  }
-
-  const pwPts=rows.filter(r=>!isNaN(parseFloat(r.pw))).sort((a,b)=>a.t-b.t);
-  if(pwPts.length){
-    const d=pwPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yPct(parseFloat(p.pw))).join(' ');
-    s+=`<path d="${d}" stroke="#444" stroke-width="1.8" fill="none" opacity=".75"/>`;
-    pwPts.forEach(p=>s+=`<text x="${x(p.t)+4}" y="${yPct(parseFloat(p.pw))+12}" font-size="10" fill="#444">P${p.pw}</text>`);
-  }
-
-  const fanPts=rows.filter(r=>!isNaN(parseFloat(r.fan))).sort((a,b)=>a.t-b.t);
-  if(fanPts.length){
-    const d=fanPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yPct(parseFloat(p.fan))).join(' ');
-    s+=`<path d="${d}" stroke="#999" stroke-width="1.8" stroke-dasharray="3 4" fill="none" opacity=".9"/>`;
-    fanPts.forEach(p=>s+=`<text x="${x(p.t)+4}" y="${yPct(parseFloat(p.fan))-4}" font-size="10" fill="#777">F${p.fan}</text>`);
-  }
-
-  rows.forEach(r=>{
-    if(r.ev){
-      const xx=x(r.t), bt=parseFloat(r.bt), yy=isNaN(bt)?T+14:yBT(bt);
-      s+=`<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" stroke="#b36b00"/>`;
-      s+=`<circle cx="${xx}" cy="${yy}" r="6" fill="#b36b00"/>`;
-      s+=`<text transform="translate(${xx+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)} ${fmt(r.t)}</text>`;
-    }
-  });
-
-  const p=phase();
-  if(p){
-    const bandY=H-B+35, bandH=18, dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
-    s+=`<rect x="${x(p.charge)}" y="${bandY}" width="${Math.max(0,x(p.gc)-x(p.charge))}" height="${bandH}" fill="#f2d6a2" opacity=".75"/>`;
-    s+=`<rect x="${x(p.gc)}" y="${bandY}" width="${Math.max(0,x(p.fc)-x(p.gc))}" height="${bandH}" fill="#d4b48c" opacity=".75"/>`;
-    s+=`<rect x="${x(p.fc)}" y="${bandY}" width="${Math.max(0,x(p.drop)-x(p.fc))}" height="${bandH}" fill="#c8886f" opacity=".75"/>`;
-    s+=`<text x="${x(p.charge)+4}" y="${bandY+13}" font-size="11" fill="#333">Dry ${dryP.toFixed(0)}%</text>`;
-    s+=`<text x="${x(p.gc)+4}" y="${bandY+13}" font-size="11" fill="#333">Mai ${maiP.toFixed(0)}%</text>`;
-    s+=`<text x="${x(p.fc)+4}" y="${bandY+13}" font-size="11" fill="#333">Dev ${devP.toFixed(0)}%</text>`;
-  }
-  s+=`<text x="${W-135}" y="${H-44}" font-size="11" fill="#444">Power: solid 0-100</text>`;
-  s+=`<text x="${W-135}" y="${H-30}" font-size="11" fill="#777">Fan: dashed 0-100</text>`;
-  $('graph').innerHTML=s;
-}
-
-function renderLog(){
-  const sorted=rows.slice().sort((a,b)=>b.t-a.t);
-  $('log').innerHTML=sorted.map(r=>{
-    const rr=rorAtRow(r);
-    return `${fmt(r.t)}ãBT:${r.bt||'-'}ãRoR:${rr===''?'-':rr.toFixed(1)}ãP:${r.pw||'-'}ãF:${r.fan||'-'}ã${r.ev||''}`;
-  }).join('<br>');
-}
-
-function profileData(){return {bean:$('bean').value,dose:$('dose').value,charge:$('charge').value,pname:$('pname').value,rows:rows,baseSec:baseSec}}
-function profiles(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return{}}}
-function setProfiles(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));refreshProfiles()}
-function saveProfile(){const name=$('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');$('pname').value=name;const p=profiles();p[name]=profileData();setProfiles(p);showMsg('ä¿å­ãã¾ããï¼'+name)}
-function loadProfile(){
-  const name=$('profileList').value;if(!name)return;
-  const p=profiles()[name];if(!p)return;
-  $('bean').value=p.bean||'';$('dose').value=p.dose||'';$('charge').value=p.charge||'';$('pname').value=p.pname||name;
-  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
-  sortRows();baseSec=p.baseSec||0;running=false;clearInterval(timer);updateAll();showMsg('å¼ã³åºãã¾ããï¼'+name);
-}
-function setReference(){const name=$('profileList').value;if(!name)return;reference=profiles()[name];referenceName=name;localStorage.setItem(REF_KEY,JSON.stringify({name,reference}));updateRefStatus();drawGraph();showMsg('åºæºã«è¨­å®ï¼'+name)}
-function clearReference(){reference=null;referenceName='';localStorage.removeItem(REF_KEY);updateRefStatus();drawGraph()}
-function loadReference(){try{const r=JSON.parse(localStorage.getItem(REF_KEY)||'null');if(r){reference=r.reference;referenceName=r.name}}catch(e){}updateRefStatus()}
-function updateRefStatus(){$('refStatus').innerText=reference?'åºæºãã­ãã¡ã¤ã«ï¼'+referenceName:'åºæºãã­ãã¡ã¤ã«ï¼ãªã'}
-function deleteProfile(){const name=$('profileList').value;if(!name)return;if(!confirm(name+'ãåé¤ãã¾ããï¼'))return;const p=profiles();delete p[name];setProfiles(p);showMsg('åé¤ãã¾ããï¼'+name)}
-function refreshProfiles(){const p=profiles();const names=Object.keys(p).sort().reverse();$('profileList').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
-function downloadCSV(){
-  let out='è±å,'+$('bean').value+'\\næå¥é,'+$('dose').value+'\\næå¥æ¸©åº¦,'+$('charge').value+'\\nãã­ãã¡ã¤ã«å,'+$('pname').value+'\\n\\næå»,BT,RoRã¹ã ã¼ãº,ç«å,é¢¨é,ã¤ãã³ã,ã¡ã¢\\n';
-  rows.sort((a,b)=>a.t-b.t).forEach(r=>{
-    const rr=rorAtRow(r);
-    out+=[fmt(r.t),r.bt,rr===''?'':rr.toFixed(1),r.pw,r.fan,r.ev,r.note].map(v=>{v=String(v??'');return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')+'\\n';
-  });
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));a.download=($('pname').value||'roast_log')+'.csv';a.click();
-}
-
-refreshProfiles();loadReference();updateAll();
 </script>
+
 </body>
 </html>
