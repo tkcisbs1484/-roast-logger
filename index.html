@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v13</title>
+<title>RM500 ローストロガー Pro v14</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v13</h1>
-<div class="sub">軽量版 / 時間調整安定版 / ±1・5・10秒 / 長押し・スワイプ対応</div>
+<h1>RM500 ローストロガー Pro v14</h1>
+<div class="sub">軽量版 / 時間調整二重発火修正版 / ±1・5・10秒</div>
 </header>
 
 <div class="card">
@@ -45,8 +45,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <button onclick="st()">スタート</button>
   <button class="b" onclick="pa()">一時停止</button>
   <button class="b" onclick="rsT()">タイマーリセット</button>
-  <button id="minusBtn" onclick="adjustTime(-timeStep)">−</button>
-  <button id="plusBtn" onclick="adjustTime(timeStep)">＋</button>
+  <button id="minusBtn">−</button>
+  <button id="plusBtn">＋</button>
   <button class="b" onclick="setStep(1)">±1秒</button>
   <button class="b" onclick="setStep(5)">±5秒</button>
   <button class="b" onclick="setStep(10)">±10秒</button>
@@ -431,21 +431,29 @@ function refP(){
 function setupHoldButton(id, action){
   const btn = q(id);
   if(!btn) return;
+
   let holdTimer = null;
   let repeatTimer = null;
+  let isDown = false;
 
   function startHold(e){
     e.preventDefault();
+    if(isDown) return;
+    isDown = true;
     resetAnchor();
     action();
+
     clearTimeout(holdTimer);
     clearInterval(repeatTimer);
+
     holdTimer = setTimeout(()=>{
-      repeatTimer = setInterval(action, 180);
-    }, 420);
+      repeatTimer = setInterval(action, 220);
+    }, 500);
   }
 
-  function stopHold(){
+  function stopHold(e){
+    if(e) e.preventDefault();
+    isDown = false;
     clearTimeout(holdTimer);
     clearInterval(repeatTimer);
     holdTimer = null;
@@ -453,12 +461,10 @@ function setupHoldButton(id, action){
     resetAnchor();
   }
 
-  btn.addEventListener('mousedown', startHold);
-  btn.addEventListener('mouseup', stopHold);
-  btn.addEventListener('mouseleave', stopHold);
-  btn.addEventListener('touchstart', startHold, {passive:false});
-  btn.addEventListener('touchend', stopHold);
-  btn.addEventListener('touchcancel', stopHold);
+  btn.addEventListener('pointerdown', startHold);
+  btn.addEventListener('pointerup', stopHold);
+  btn.addEventListener('pointercancel', stopHold);
+  btn.addEventListener('pointerleave', stopHold);
 }
 
 function setupSwipeTime(){
@@ -524,4 +530,5 @@ setupSwipeTime();
 </script>
 </body>
 </html>
+
 
