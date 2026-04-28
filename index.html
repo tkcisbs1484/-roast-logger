@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v7</title>
+<title>RM500 ローストロガー Pro v8</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v7</h1>
-<div class="sub">BT 1刻み / +10秒 / 分秒イベント記録 / 下部フェーズ帯</div>
+<h1>RM500 ローストロガー Pro v8</h1>
+<div class="sub">軽量版 / BT 1刻み / ±10秒 / 手入力1分ごと / RoR自動計算修正</div>
 </header>
 
 <div class="card">
@@ -46,6 +46,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <button class="b" onclick="pa()">一時停止</button>
   <button class="b" onclick="rsT()">タイマーリセット</button>
   <button onclick="add10s()">+10秒</button>
+  <button onclick="sub10s()">-10秒</button>
   <div id="msg" class="small">準備OK</div>
 </div>
 
@@ -54,7 +55,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   火力 <input id="pw" type="number" step="5">
   風量 <input id="fan" type="number" step="5">
   <button onclick="saveNow()">現在時刻に記録</button>
-  <div class="small">BTは1刻み。火力・風量は5刻み。RoRはBT差と時間差から自動計算します。</div>
+  <div class="small">BTは1刻み。火力・風量は5刻み。RoRは前回BT入力との差から自動計算します。</div>
 </div>
 
 <div class="card">
@@ -97,7 +98,6 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
     <button class="r" onclick="delP()">削除</button>
   </div>
   <div class="refbox" id="refStatus">基準プロファイル：なし</div>
-  <div class="small">基準プロファイルを背景に表示したまま、今回の焙煎をリアルタイムで重ねられます。</div>
 </div>
 
 <div class="card wrap">
@@ -109,23 +109,38 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 
 <script>
 let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
-const KEY='rm500_pro_profiles_jp_v7';
-const REFKEY='rm500_pro_reference_jp_v7';
+const KEY='rm500_pro_profiles_jp_v8_fast';
+const REFKEY='rm500_pro_reference_jp_v8_fast';
+let lastTableSignature='';
 
 function q(x){return document.getElementById(x)}
 function pad(n){return String(n).padStart(2,'0')}
-function fmt(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60)}
+function fmt(s){s=Math.max(0,Math.floor(s));return pad(Math.floor(s/60))+':'+pad(s%60)}
 function sec(){return run?base+Math.floor((Date.now()-t0)/1000):base}
-function curSlot(){return Math.floor(sec()/10)*10}
+function curSlot(){return Math.floor(sec()/60)*60}
 function msg(x){q('msg').innerText=x}
-function ensureTime(t){if(!rows.find(r=>r.t===t))rows.push({t:t,bt:'',pw:'',fan:'',ev:'',note:''});rows.sort((a,b)=>a.t-b.t)}
+function ensureTime(t){if(t<0)t=0;if(!rows.find(r=>r.t===t))rows.push({t:t,bt:'',pw:'',fan:'',ev:'',note:''});rows.sort((a,b)=>a.t-b.t)}
 function currentRow(){let t=curSlot();ensureTime(t);return rows.find(r=>r.t===t)}
-function tick(){q('time').innerText=fmt(sec());ensureTime(curSlot());draw();render();analysis()}
 
-function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(tick,300);tick();msg('タイマー開始')}
-function pa(){base=sec();run=0;clearInterval(timer);tick();msg('一時停止')}
-function rsT(){base=0;run=0;clearInterval(timer);tick();msg('タイマーをリセットしました')}
-function add10s(){base=curSlot()+10;tick();msg('+10秒しました')}
+function lightUpdate(){
+  q('time').innerText=fmt(sec());
+  ensureTime(curSlot());
+  draw();
+  analysis();
+  renderTableIfNeeded();
+}
+function fullUpdate(){
+  q('time').innerText=fmt(sec());
+  ensureTime(curSlot());
+  draw();
+  analysis();
+  render(true);
+}
+function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(lightUpdate,500);fullUpdate();msg('タイマー開始')}
+function pa(){base=sec();run=0;clearInterval(timer);fullUpdate();msg('一時停止')}
+function rsT(){base=0;run=0;clearInterval(timer);fullUpdate();msg('タイマーをリセットしました')}
+function add10s(){base=curSlot()+10;if(run)t0=Date.now();fullUpdate();msg('+10秒しました')}
+function sub10s(){base=Math.max(0,curSlot()-10);if(run)t0=Date.now();fullUpdate();msg('-10秒しました')}
 
 function saveNow(){
   let r=currentRow();
@@ -135,7 +150,7 @@ function saveNow(){
   q('bt').value='';
   q('pw').value='';
   q('fan').value='';
-  tick();
+  fullUpdate();
   msg(fmt(r.t)+' に記録しました。入力欄を空にしました。');
 }
 
@@ -148,17 +163,20 @@ function ev(x){
     }
   });
   r.ev=r.ev?r.ev+'/'+x:x;
-  tick();
+  fullUpdate();
   msg(x+'を現在時刻（'+fmt(r.t)+'）に記録しました');
 }
 
 function autoRorAt(arr,idx){
-  let a=parseFloat(arr[idx]?.bt);
+  let sorted=arr.slice().sort((a,b)=>(a.t??0)-(b.t??0));
+  let target=arr[idx];
+  let idx2=sorted.findIndex(r=>r===target);
+  let a=parseFloat(sorted[idx2]?.bt);
   if(isNaN(a))return'';
-  for(let j=idx-1;j>=0;j--){
-    let b=parseFloat(arr[j]?.bt);
+  for(let j=idx2-1;j>=0;j--){
+    let b=parseFloat(sorted[j]?.bt);
     if(!isNaN(b)){
-      let dt=(arr[idx].t-arr[j].t)/60;
+      let dt=((sorted[idx2].t??idx2*60)-(sorted[j].t??j*60))/60;
       if(dt>0)return(a-b)/dt;
     }
   }
@@ -168,26 +186,34 @@ function getRorFrom(arr,idx){return autoRorAt(arr,idx)}
 function getRor(i){return getRorFrom(rows,i)}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
-function render(){
+function tableSignature(){
+  return rows.map(r=>[r.t,r.bt,r.pw,r.fan,r.ev,r.note].join('|')).join('~');
+}
+function renderTableIfNeeded(){
+  let sig=tableSignature();
+  if(sig!==lastTableSignature)render(false);
+}
+function render(force){
+  let sig=tableSignature();
+  if(!force && sig===lastTableSignature)return;
+  lastTableSignature=sig;
   let h='';
   rows.forEach((r,i)=>{
     let rr=getRor(i);
     let rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
     h+=`<tr><td>${fmt(r.t)}</td>
-    <td><input type=number step=1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis();renderSoon()"></td>
+    <td><input type=number step=1 value="${esc(r.bt)}" onchange="rows[${i}].bt=this.value;fullUpdate()"></td>
     <td class="rorCell">${rrText}</td>
-    <td><input type=number step=5 value="${esc(r.pw)}" oninput="rows[${i}].pw=this.value"></td>
-    <td><input type=number step=5 value="${esc(r.fan)}" oninput="rows[${i}].fan=this.value"></td>
-    <td><input style="width:100px" value="${esc(r.ev)}" oninput="rows[${i}].ev=this.value;draw();analysis()"></td>
-    <td><input style="width:120px" value="${esc(r.note)}" oninput="rows[${i}].note=this.value"></td></tr>`;
+    <td><input type=number step=5 value="${esc(r.pw)}" onchange="rows[${i}].pw=this.value;fullUpdate()"></td>
+    <td><input type=number step=5 value="${esc(r.fan)}" onchange="rows[${i}].fan=this.value;fullUpdate()"></td>
+    <td><input style="width:100px" value="${esc(r.ev)}" onchange="rows[${i}].ev=this.value;fullUpdate()"></td>
+    <td><input style="width:120px" value="${esc(r.note)}" onchange="rows[${i}].note=this.value;fullUpdate()"></td></tr>`;
   });
   q('tb').innerHTML=h;
 }
-let renderTimer=null;
-function renderSoon(){clearTimeout(renderTimer);renderTimer=setTimeout(()=>{render();draw();analysis()},250)}
 
 function eventTime(name, arr=rows){
-  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return arr[i].t}
+  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return arr[i].t??i*60}
   return null;
 }
 function eventTemp(name, arr=rows){
@@ -207,7 +233,6 @@ function phaseData(){
  return null;
 }
 
-function durTxt(secVal){return fmt(secVal)}
 function analysis(){
  let p=phaseData();
  let drop=eventTime('排出'), dropT=eventTemp('排出');
@@ -215,9 +240,9 @@ function analysis(){
  q('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
  if(p){
    let dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
-   q('dryM').innerText=durTxt(p.dry)+' / '+dryP.toFixed(0)+'%';
-   q('maiM').innerText=durTxt(p.mai)+' / '+maiP.toFixed(0)+'%';
-   q('devM').innerText=durTxt(p.dev)+' / '+devP.toFixed(0)+'%';
+   q('dryM').innerText=fmt(p.dry)+' / '+dryP.toFixed(0)+'%';
+   q('maiM').innerText=fmt(p.mai)+' / '+maiP.toFixed(0)+'%';
+   q('devM').innerText=fmt(p.dev)+' / '+devP.toFixed(0)+'%';
    q('dtrM').innerText=devP.toFixed(1)+'%';
    let note=[];
    if(devP<10)note.push('DTR低め');
@@ -255,8 +280,9 @@ function draw(){
  });
  if(reference&&reference.rows){
    reference.rows.forEach((r,i)=>{
-     let v=parseFloat(r.bt); if(!isNaN(v))refPts.push([r.t??i*60,v]);
-     let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([r.t??i*60,rv]);
+     let tt=r.t??i*60;
+     let v=parseFloat(r.bt); if(!isNaN(v))refPts.push([tt,v]);
+     let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([tt,rv]);
    });
  }
  let maxSec=Math.max(600,curSlot(),rows.length?rows[rows.length-1].t:0,refPts.length?refPts[refPts.length-1][0]:0);
@@ -331,7 +357,7 @@ function loadP(){
  q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;
  rows=(p.rows||[]).map((r,i)=>({t:r.t??i*60,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
  rows.sort((a,b)=>a.t-b.t);
- base=p.base||0;run=0;clearInterval(timer);ensureTime(curSlot());tick();msg('現在プロファイルとして呼び出しました：'+name);
+ base=p.base||0;run=0;clearInterval(timer);ensureTime(curSlot());fullUpdate();msg('現在プロファイルとして呼び出しました：'+name);
 }
 function setReference(){
  let name=q('plist').value;if(!name)return;
@@ -354,9 +380,9 @@ function clearReference(){
 }
 function newWithReference(){
  if(!confirm('基準プロファイルを残したまま新規焙煎を開始しますか？'))return;
- run=0;base=0;clearInterval(timer);rows=[];
+ run=0;base=0;clearInterval(timer);rows=[];lastTableSignature='';
  ['bean','dose','charge','targetDrop','pname','bt','pw','fan'].forEach(id=>q(id).value='');
- ensureTime(0);tick();msg('基準を残して新規焙煎を開始しました');
+ ensureTime(0);fullUpdate();msg('基準を残して新規焙煎を開始しました');
 }
 function delP(){
  let name=q('plist').value;
@@ -370,8 +396,7 @@ function refP(){
  q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 
-ensureTime(0);refP();loadSavedReference();tick();
+ensureTime(0);refP();loadSavedReference();fullUpdate();
 </script>
 </body>
 </html>
-
