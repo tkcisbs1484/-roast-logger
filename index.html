@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v11</title>
+<title>RM500 ローストロガー Pro v12</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v11</h1>
-<div class="sub">軽量版 / BT 1刻み / ±10秒長押し連打 / 手入力1分ごと</div>
+<h1>RM500 ローストロガー Pro v12</h1>
+<div class="sub">軽量版 / BT 1刻み / ±1・5・10秒切替 / 長押し・スワイプ調整</div>
 </header>
 
 <div class="card">
@@ -45,8 +45,12 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <button onclick="st()">スタート</button>
   <button class="b" onclick="pa()">一時停止</button>
   <button class="b" onclick="rsT()">タイマーリセット</button>
-  <button id="plus10Btn" onclick="add10s()">+10秒</button>
-  <button id="minus10Btn" onclick="sub10s()">-10秒</button>
+  <button id="minusBtn" onclick="adjustTime(-timeStep)">−</button>
+  <button id="plusBtn" onclick="adjustTime(timeStep)">＋</button>
+  <button class="b" onclick="setStep(1)">±1秒</button>
+  <button class="b" onclick="setStep(5)">±5秒</button>
+  <button class="b" onclick="setStep(10)">±10秒</button>
+  <span class="pill" id="stepLabel">現在: ±10秒</span>
   <div id="msg" class="small">準備OK</div>
 </div>
 
@@ -139,18 +143,24 @@ function fullUpdate(){
 function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(lightUpdate,500);fullUpdate();msg('タイマー開始')}
 function pa(){base=sec();run=0;clearInterval(timer);fullUpdate();msg('一時停止')}
 function rsT(){base=0;run=0;clearInterval(timer);fullUpdate();msg('タイマーをリセットしました')}
-function add10s(){
-  base = sec() + 10;
-  if(run) t0 = Date.now();
-  fullUpdate();
-  msg('+10秒しました');
+let timeStep = 10;
+
+function setStep(n){
+  timeStep = n;
+  q('stepLabel').innerText = '現在: ±' + n + '秒';
+  msg('時間調整を±' + n + '秒にしました');
 }
-function sub10s(){
-  base = Math.max(0, sec() - 10);
-  if(run) t0 = Date.now();
+
+function adjustTime(delta){
+  let current = Math.floor(sec());
+  base = Math.max(0, current + delta);
+  t0 = Date.now();
   fullUpdate();
-  msg('-10秒しました');
+  msg((delta>0?'+':'') + delta + '秒しました');
 }
+
+function add10s(){ adjustTime(10); }
+function sub10s(){ adjustTime(-10); }
 
 function saveNow(){
   let r=currentRow();
@@ -437,6 +447,48 @@ function setupHoldButton(id, action){
   btn.addEventListener('touchcancel', stopHold);
 }
 
+function setupSwipeTime(){
+  const el = q('time');
+  if(!el) return;
+  let startX = 0;
+  let startY = 0;
+  let used = false;
+
+  el.style.touchAction = 'pan-y';
+  el.title = '左右スワイプで時間調整';
+
+  el.addEventListener('touchstart', e=>{
+    if(!e.touches || !e.touches[0]) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    used = false;
+  }, {passive:true});
+
+  el.addEventListener('touchmove', e=>{
+    if(!e.touches || !e.touches[0] || used) return;
+    let dx = e.touches[0].clientX - startX;
+    let dy = e.touches[0].clientY - startY;
+    if(Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5){
+      adjustTime(dx > 0 ? timeStep : -timeStep);
+      used = true;
+    }
+  }, {passive:true});
+
+  el.addEventListener('mousedown', e=>{
+    startX = e.clientX;
+    startY = e.clientY;
+    used = false;
+  });
+
+  el.addEventListener('mouseup', e=>{
+    let dx = e.clientX - startX;
+    let dy = e.clientY - startY;
+    if(Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5){
+      adjustTime(dx > 0 ? timeStep : -timeStep);
+    }
+  });
+}
+
 function initMinuteRows(maxMin=12){
   for(let m=0;m<=maxMin;m++){
     ensureTime(m*60);
@@ -446,8 +498,9 @@ initMinuteRows(12);
 refP();
 loadSavedReference();
 fullUpdate();
-setupHoldButton('plus10Btn', add10s);
-setupHoldButton('minus10Btn', sub10s);
+setupHoldButton('plusBtn', ()=>adjustTime(timeStep));
+setupHoldButton('minusBtn', ()=>adjustTime(-timeStep));
+setupSwipeTime();
 </script>
 </body>
 </html>
