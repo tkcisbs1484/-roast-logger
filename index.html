@@ -382,7 +382,7 @@ function newWithReference(){
  if(!confirm('基準プロファイルを残したまま新規焙煎を開始しますか？'))return;
  run=0;base=0;clearInterval(timer);rows=[];lastTableSignature='';
  ['bean','dose','charge','targetDrop','pname','bt','pw','fan'].forEach(id=>q(id).value='');
- ensureTime(0);fullUpdate();msg('基準を残して新規焙煎を開始しました');
+ initMinuteRows(12);fullUpdate();msg('基準を残して新規焙煎を開始しました');
 }
 function delP(){
  let name=q('plist').value;
@@ -396,7 +396,12 @@ function refP(){
  q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 
-ensureTime(0);refP();loadSavedReference();fullUpdate();
+function initMinuteRows(maxMin=12){
+  for(let m=0;m<=maxMin;m++){
+    ensureTime(m*60);
+  }
+}
+initMinuteRows(12);refP();loadSavedReference();fullUpdate();
 </script>
 </body>
 </html>
