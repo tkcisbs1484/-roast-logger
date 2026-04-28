@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v20</title>
+<title>RM500 ローストロガー v21</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
 h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.85;margin-top:4px}
 .card{background:#fff;margin:10px;padding:12px;border-radius:14px;border:1px solid #ddd}
-button{font-size:15px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff;touch-action:manipulation}
+button{font-size:15px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff}
 button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a}button.r{background:#9b1c1c}
 input,select{font-size:15px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px;background:#fff}
 input{width:72px}.wide{width:190px}
 #time{font-size:48px;font-weight:800;text-align:center;margin:8px;user-select:none}
 svg{width:100%;height:380px;background:#fff;border:1px solid #ddd;border-radius:10px}
-table{width:100%;border-collapse:collapse;background:#fff;min-width:960px}
+table{width:100%;border-collapse:collapse;background:#fff;min-width:900px}
 th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}
 td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 .rorCell{font-weight:700;color:#333}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v20</h1>
-<div class="sub">30秒枠記録 / RoR安定計算 / イベントも最寄り30秒でグラフ反映 / RM500用</div>
+<h1>RM500 ローストロガー v21</h1>
+<div class="sub">30秒ごと入力 / RoR安定計算 / イベント最寄り30秒枠 / 軽量版</div>
 </header>
 
 <div class="card">
@@ -42,15 +42,11 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 
 <div class="card">
   <div id="time">00:00</div>
-  <button onclick="st()">スタート</button>
-  <button class="b" onclick="pa()">一時停止</button>
-  <button class="b" onclick="rsT()">タイマーリセット</button>
-  <button id="minusBtn">−</button>
-  <button id="plusBtn">＋</button>
-  <button class="b" onclick="setStep(1)">±1秒</button>
-  <button class="b" onclick="setStep(5)">±5秒</button>
-  <button class="b" onclick="setStep(10)">±10秒</button>
-  <span class="pill" id="stepLabel">現在: ±10秒</span>
+  <button onclick="startTimer()">スタート</button>
+  <button class="b" onclick="pauseTimer()">一時停止</button>
+  <button class="b" onclick="resetTimer()">タイマーリセット</button>
+  <button onclick="adjustTime(-10)">−10秒</button>
+  <button onclick="adjustTime(10)">＋10秒</button>
   <div id="msg" class="small">準備OK</div>
 </div>
 
@@ -63,22 +59,21 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 </div>
 
 <div class="card">
-  <button class="e" onclick="ev('投入')">投入を最寄り30秒に記録</button>
-  <button class="e" onclick="ev('ボトム')">ボトムを最寄り30秒に記録</button>
-  <button class="e" onclick="ev('GC')">GCを最寄り30秒に記録</button>
-  <button class="e" onclick="ev('1ハゼ')">1ハゼを最寄り30秒に記録</button>
-  <button class="e" onclick="ev('排出')">排出を最寄り30秒に記録</button>
-  <button onclick="csv()">CSV保存</button>
+  <button class="e" onclick="saveEvent('投入')">投入</button>
+  <button class="e" onclick="saveEvent('ボトム')">ボトム</button>
+  <button class="e" onclick="saveEvent('GC')">GC</button>
+  <button class="e" onclick="saveEvent('1ハゼ')">1ハゼ</button>
+  <button class="e" onclick="saveEvent('排出')">排出</button>
+  <button onclick="downloadCSV()">CSV保存</button>
 </div>
 
 <div class="card">
-  <span class="pill">黒線：今回BT</span>
-  <span class="pill">黒点線：今回RoR</span>
+  <span class="pill">黒線：BT</span>
+  <span class="pill">点線：RoR</span>
   <span class="pill">青灰線：基準BT</span>
   <span class="pill">下部帯：フェーズ比率</span>
-  <span class="pill">イベント：最寄り30秒枠</span>
-  <span class="pill">縦軸：0〜230℃ / 5℃刻み</span>
-  <svg id="g" viewBox="0 0 760 380"></svg>
+  <span class="pill">縦軸：0〜230℃</span>
+  <svg id="graph" viewBox="0 0 760 380"></svg>
 </div>
 
 <div class="card">
@@ -89,18 +84,18 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
   <span class="metric">DTR<br><small>デベロップメント比率</small><br><b id="dtrM">-</b></span>
   <span class="metric">Total Time<br><small>総焙煎時間</small><br><b id="totalM">-</b></span>
   <span class="metric">Drop Temp<br><small>排出温度</small><br><b id="dropM">-</b></span>
-  <div class="small" id="analysisNote">フェーズ計算には「投入 / GC / 1ハゼ / 排出」のイベント記録が必要です。</div>
+  <div class="small" id="analysisNote">投入 / GC / 1ハゼ / 排出を記録すると自動計算します。</div>
 </div>
 
 <div class="card">
   <div class="row">
-    <button class="g" onclick="saveP()">プロファイル保存</button>
-    <select id="plist" class="wide"></select>
-    <button onclick="loadP()">現在プロファイルとして呼出</button>
+    <button class="g" onclick="saveProfile()">プロファイル保存</button>
+    <select id="profileList" class="wide"></select>
+    <button onclick="loadProfile()">呼出</button>
     <button onclick="setReference()">基準に設定</button>
-    <button class="b" onclick="newWithReference()">基準を残して新規焙煎</button>
+    <button class="b" onclick="newRoastKeepRef()">基準を残して新規焙煎</button>
     <button class="b" onclick="clearReference()">基準解除</button>
-    <button class="r" onclick="delP()">削除</button>
+    <button class="r" onclick="deleteProfile()">削除</button>
   </div>
   <div class="refbox" id="refStatus">基準プロファイル：なし</div>
 </div>
@@ -108,364 +103,296 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 <div class="card wrap">
 <table>
 <thead><tr><th>時刻</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
-<tbody id="tb"></tbody>
+<tbody id="tbody"></tbody>
 </table>
 </div>
 
 <script>
-let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
-const KEY='rm500_pro_profiles_jp_v20';
-const REFKEY='rm500_pro_reference_jp_v20';
-let timeStep=10, anchorTime=null, lastTableSignature='';
+const PROFILE_KEY='rm500_v21_profiles';
+const REF_KEY='rm500_v21_reference';
+let rows=[];
+let reference=null;
+let referenceName='';
+let running=false;
+let startedAt=0;
+let baseSec=0;
+let timer=null;
 
-function q(x){return document.getElementById(x)}
+function $(id){return document.getElementById(id)}
 function pad(n){return String(n).padStart(2,'0')}
 function fmt(s){s=Math.max(0,Math.floor(s));return pad(Math.floor(s/60))+':'+pad(s%60)}
-function sec(){return run?base+Math.floor((Date.now()-t0)/1000):base}
-function nearest30(t){return Math.round(Math.floor(t)/30)*30}
-function msg(x){q('msg').innerText=x}
+function nowSec(){return running ? baseSec + Math.floor((Date.now()-startedAt)/1000) : baseSec}
+function nearest30(s){return Math.round(Math.floor(s)/30)*30}
+function showMsg(t){$('msg').innerText=t}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
-function ensureTime(t){
+function makeRow(t){return {t:t,bt:'',pw:'',fan:'',ev:'',note:''}}
+function sortRows(){rows.sort((a,b)=>a.t-b.t)}
+function ensureRow(t){
   t=Math.max(0,Math.floor(t));
-  if(!rows.find(r=>r.t===t))rows.push({t:t,bt:'',pw:'',fan:'',ev:'',note:''});
-  rows.sort((a,b)=>a.t-b.t);
+  let r=rows.find(x=>x.t===t);
+  if(!r){r=makeRow(t); rows.push(r); sortRows();}
+  return r;
 }
-function getOrCreateRow(t){
-  t=Math.max(0,Math.floor(t));
-  ensureTime(t);
-  return rows.find(r=>r.t===t);
+function initRows(){
+  rows=[];
+  for(let t=0;t<=12*60;t+=30)ensureRow(t);
 }
+function updateAll(){ $('time').innerText=fmt(nowSec()); renderTable(); updateAnalysis(); drawGraph(); }
+function updateLight(){ $('time').innerText=fmt(nowSec()); drawGraph(); }
 
-function setStep(n){
-  timeStep=n;
-  q('stepLabel').innerText='現在: ±'+n+'秒';
-  msg('時間調整を±'+n+'秒にしました');
-}
-function beginAdjust(){if(anchorTime===null)anchorTime=Math.floor(sec())}
-function resetAnchor(){anchorTime=null}
-function adjustTime(delta){
-  beginAdjust();
-  anchorTime=Math.max(0,anchorTime+delta);
-  base=anchorTime;
-  t0=Date.now();
-  fullUpdate();
-  msg((delta>0?'+':'')+delta+'秒しました');
-}
-
-function lightUpdate(){
-  q('time').innerText=fmt(sec());
-  draw();
-  analysis();
-}
-function fullUpdate(){
-  q('time').innerText=fmt(sec());
-  draw();
-  analysis();
-  render(true);
-}
-function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(lightUpdate,500);fullUpdate();msg('タイマー開始')}
-function pa(){base=sec();run=0;clearInterval(timer);fullUpdate();msg('一時停止')}
-function rsT(){base=0;run=0;clearInterval(timer);fullUpdate();msg('タイマーをリセットしました')}
+function startTimer(){ if(running)return; running=true; startedAt=Date.now(); clearInterval(timer); timer=setInterval(updateLight,500); updateAll(); showMsg('タイマー開始'); }
+function pauseTimer(){ baseSec=nowSec(); running=false; clearInterval(timer); updateAll(); showMsg('一時停止'); }
+function resetTimer(){ baseSec=0; running=false; clearInterval(timer); updateAll(); showMsg('タイマーリセット'); }
+function adjustTime(delta){ baseSec=Math.max(0, nowSec()+delta); startedAt=Date.now(); updateAll(); showMsg((delta>0?'+':'')+delta+'秒'); }
 
 function saveNow(){
-  let rawT=Math.floor(sec());
-  let t=nearest30(rawT);
-  let r=getOrCreateRow(t);
-  r.bt=q('bt').value;
-  r.pw=q('pw').value;
-  r.fan=q('fan').value;
-  q('bt').value='';
-  q('pw').value='';
-  q('fan').value='';
-  fullUpdate();
-  msg(fmt(rawT)+' の入力を '+fmt(t)+' 枠に記録しました。');
+  const raw=nowSec();
+  const t=nearest30(raw);
+  const r=ensureRow(t);
+  r.bt=$('bt').value;
+  r.pw=$('pw').value;
+  r.fan=$('fan').value;
+  $('bt').value=''; $('pw').value=''; $('fan').value='';
+  updateAll();
+  showMsg(fmt(raw)+' → '+fmt(t)+' に記録');
 }
-
-function ev(name){
-  let rawT = Math.floor(sec());
-  let t = nearest30(rawT);
-
-  // 同じイベントは1か所だけにする
-  rows.forEach(row=>{
-    if(row.ev){
-      let parts = row.ev.split('/').filter(p=>p!==name);
-      row.ev = parts.join('/');
+function saveEvent(name){
+  const raw=nowSec();
+  const t=nearest30(raw);
+  rows.forEach(r=>{
+    if(r.ev){
+      r.ev=r.ev.split('/').filter(x=>x!==name).join('/');
     }
   });
-
-  let r = getOrCreateRow(t);
-  r.ev = r.ev ? r.ev + '/' + name : name;
-
-  fullUpdate();
-  msg(name + 'を ' + fmt(rawT) + ' → ' + fmt(t) + ' 枠に記録しました');
+  const r=ensureRow(t);
+  r.ev = r.ev ? r.ev+'/'+name : name;
+  updateAll();
+  showMsg(name+'：'+fmt(raw)+' → '+fmt(t)+' に記録');
 }
 
-function autoRorAt(arr,idx){
-  let sorted=arr.slice().sort((a,b)=>(a.t??0)-(b.t??0));
-  let target=arr[idx];
-  let targetTime=target?.t;
-  let idx2=sorted.findIndex(r=>r===target || r.t===targetTime);
-  if(idx2<0)return'';
-  let a=parseFloat(sorted[idx2]?.bt);
-  if(isNaN(a))return'';
-  for(let j=idx2-1;j>=0;j--){
-    let b=parseFloat(sorted[j]?.bt);
+function rorFor(index, arr=rows){
+  const sorted=arr.slice().sort((a,b)=>a.t-b.t);
+  const target=arr[index];
+  const i=sorted.findIndex(x=>x===target || x.t===target.t);
+  if(i<0)return '';
+  const a=parseFloat(sorted[i].bt);
+  if(isNaN(a))return '';
+  for(let j=i-1;j>=0;j--){
+    const b=parseFloat(sorted[j].bt);
     if(!isNaN(b)){
-      let dt=((sorted[idx2].t??idx2*30)-(sorted[j].t??j*30))/60;
-      if(dt>0)return(a-b)/dt;
+      const dt=(sorted[i].t-sorted[j].t)/60;
+      if(dt>0)return (a-b)/dt;
     }
   }
-  return'';
+  return '';
 }
-function getRorFrom(arr,idx){return autoRorAt(arr,idx)}
-function getRor(i){return getRorFrom(rows,i)}
 
-function render(){
-  let h='';
+function renderTable(){
+  let html='';
   rows.forEach((r,i)=>{
-    let rr=getRor(i);
-    let rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
-    h+=`<tr><td>${fmt(r.t)}</td>
-    <td><input type=number step=1 value="${esc(r.bt)}" onchange="rows[${i}].bt=this.value;fullUpdate()"></td>
-    <td class="rorCell">${rrText}</td>
-    <td><input type=number step=5 value="${esc(r.pw)}" onchange="rows[${i}].pw=this.value;fullUpdate()"></td>
-    <td><input type=number step=5 value="${esc(r.fan)}" onchange="rows[${i}].fan=this.value;fullUpdate()"></td>
-    <td><input style="width:100px" value="${esc(r.ev)}" onchange="rows[${i}].ev=this.value;fullUpdate()"></td>
-    <td><input style="width:120px" value="${esc(r.note)}" onchange="rows[${i}].note=this.value;fullUpdate()"></td></tr>`;
+    const rr=rorFor(i);
+    const rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
+    html+=`<tr>
+      <td>${fmt(r.t)}</td>
+      <td><input type="number" step="1" value="${esc(r.bt)}" onchange="rows[${i}].bt=this.value; updateAll();"></td>
+      <td class="rorCell">${rrText}</td>
+      <td><input type="number" step="5" value="${esc(r.pw)}" onchange="rows[${i}].pw=this.value; updateAll();"></td>
+      <td><input type="number" step="5" value="${esc(r.fan)}" onchange="rows[${i}].fan=this.value; updateAll();"></td>
+      <td><input style="width:100px" value="${esc(r.ev)}" onchange="rows[${i}].ev=this.value; updateAll();"></td>
+      <td><input style="width:120px" value="${esc(r.note)}" onchange="rows[${i}].note=this.value; updateAll();"></td>
+    </tr>`;
   });
-  q('tb').innerHTML=h;
+  $('tbody').innerHTML=html;
 }
 
 function eventTime(name, arr=rows){
-  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return arr[i].t??i*60}
-  return null;
+  const r=arr.find(x=>(x.ev||'').includes(name));
+  return r ? r.t : null;
 }
 function eventTemp(name, arr=rows){
-  for(let i=0;i<arr.length;i++){
-    if((arr[i].ev||'').includes(name)){
-      let v=parseFloat(arr[i].bt);return isNaN(v)?null:v;
-    }
+  const r=arr.find(x=>(x.ev||'').includes(name));
+  if(!r)return null;
+  const v=parseFloat(r.bt);
+  return isNaN(v)?null:v;
+}
+function phase(){
+  let charge=eventTime('投入');
+  const gc=eventTime('GC'), fc=eventTime('1ハゼ'), drop=eventTime('排出');
+  if(charge===null)charge=0;
+  if(gc!==null && fc!==null && drop!==null && drop>0){
+    return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
   }
   return null;
 }
-function phaseData(){
- let charge=eventTime('投入'), gc=eventTime('GC'), fc=eventTime('1ハゼ'), drop=eventTime('排出');
- if(charge===null) charge=0;
- if(gc!==null && fc!==null && drop!==null && drop>0){
-   return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
- }
- return null;
+function updateAnalysis(){
+  const p=phase();
+  const drop=eventTime('排出');
+  const dropT=eventTemp('排出');
+  $('totalM').innerText=drop!==null?fmt(drop):'-';
+  $('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
+  if(!p){
+    $('dryM').innerText='-'; $('maiM').innerText='-'; $('devM').innerText='-'; $('dtrM').innerText='-';
+    $('analysisNote').innerText='投入 / GC / 1ハゼ / 排出を記録すると自動計算します。';
+    return;
+  }
+  const dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
+  $('dryM').innerText=fmt(p.dry)+' / '+dryP.toFixed(0)+'%';
+  $('maiM').innerText=fmt(p.mai)+' / '+maiP.toFixed(0)+'%';
+  $('devM').innerText=fmt(p.dev)+' / '+devP.toFixed(0)+'%';
+  $('dtrM').innerText=devP.toFixed(1)+'%';
+  let notes=[];
+  if(devP<10)notes.push('DTR低め');
+  if(devP>20)notes.push('DTR高め');
+  if(dryP>65)notes.push('ドライ長め');
+  if(maiP<20)notes.push('メイラード短め');
+  $('analysisNote').innerHTML=notes.length?'<span class="warn">'+notes.join(' / ')+'</span>':'フェーズバランスは読みやすい範囲です。';
 }
 
-function analysis(){
- let p=phaseData();
- let drop=eventTime('排出'), dropT=eventTemp('排出');
- q('totalM').innerText=drop!==null?fmt(drop):'-';
- q('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
- if(p){
-   let dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
-   q('dryM').innerText=fmt(p.dry)+' / '+dryP.toFixed(0)+'%';
-   q('maiM').innerText=fmt(p.mai)+' / '+maiP.toFixed(0)+'%';
-   q('devM').innerText=fmt(p.dev)+' / '+devP.toFixed(0)+'%';
-   q('dtrM').innerText=devP.toFixed(1)+'%';
-   let note=[];
-   if(devP<10)note.push('DTR低め');
-   if(devP>20)note.push('DTR高め');
-   if(dryP>65)note.push('ドライ長め');
-   if(maiP<20)note.push('メイラード短め');
-   q('analysisNote').innerHTML=note.length?'<span class="warn">'+note.join(' / ')+'</span>':'フェーズバランスは読みやすい範囲です。';
- }else{
-   q('dryM').innerText='-';q('maiM').innerText='-';q('devM').innerText='-';q('dtrM').innerText='-';
-   q('analysisNote').innerText='フェーズ計算には「投入 / GC / 1ハゼ / 排出」のイベント記録が必要です。';
- }
+function drawGraph(){
+  const W=760,H=380,L=45,R=15,T=24,B=58,gw=W-L-R,gh=H-T-B;
+  const maxSec=Math.max(600, nowSec(), rows[rows.length-1]?.t||0, reference?.rows?.[reference.rows.length-1]?.t||0);
+  const x=t=>L+gw*t/maxSec;
+  const y=v=>T+gh*(1-v/230);
+  const yr=v=>T+gh*(1-v/30);
+  let s=`<rect width="${W}" height="${H}" fill="white"/>`;
+  s+=`<path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
+
+  for(let temp=0;temp<=230;temp+=5){
+    const yy=y(temp), major=temp%10===0;
+    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="${major?'#e8e8e8':'#f4f4f4'}" stroke-width="${major?1:.5}"/>`;
+    if(temp%20===0 || temp===230)s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${temp}</text>`;
+  }
+  for(let t=0;t<=maxSec;t+=60){
+    s+=`<line x1="${x(t)}" y1="${H-B}" x2="${x(t)}" y2="${H-B+7}" stroke="#999"/>`;
+    s+=`<text x="${x(t)-8}" y="${H-B+28}" font-size="12" fill="#666">${Math.floor(t/60)}</text>`;
+  }
+
+  function pathFor(arr, kind){
+    const pts=arr.filter(r=>!isNaN(parseFloat(r.bt))).map(r=>[r.t,parseFloat(r.bt)]);
+    if(!pts.length)return '';
+    return pts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
+  }
+  if(reference?.rows){
+    const d=pathFor(reference.rows);
+    if(d)s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`;
+  }
+  const d=pathFor(rows);
+  if(d)s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;
+
+  rows.forEach(r=>{
+    const v=parseFloat(r.bt);
+    if(!isNaN(v))s+=`<circle cx="${x(r.t)}" cy="${y(v)}" r="4" fill="#222"/>`;
+  });
+
+  const rorPts=[];
+  rows.forEach((r,i)=>{
+    const rr=rorFor(i);
+    if(rr!=='')rorPts.push([r.t,rr]);
+  });
+  if(rorPts.length){
+    const rd=rorPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');
+    s+=`<path d="${rd}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/>`;
+  }
+
+  rows.forEach(r=>{
+    if(r.ev){
+      const xx=x(r.t);
+      const v=parseFloat(r.bt);
+      const yy=isNaN(v)?T+14:y(v);
+      s+=`<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" stroke="#b36b00"/>`;
+      s+=`<circle cx="${xx}" cy="${yy}" r="6" fill="#b36b00"/>`;
+      s+=`<text transform="translate(${xx+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)} ${fmt(r.t)}</text>`;
+    }
+  });
+
+  const p=phase();
+  if(p){
+    const bandY=H-B+8, bandH=18;
+    const dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
+    s+=`<rect x="${x(p.charge)}" y="${bandY}" width="${Math.max(0,x(p.gc)-x(p.charge))}" height="${bandH}" fill="#f2d6a2" opacity=".75"/>`;
+    s+=`<rect x="${x(p.gc)}" y="${bandY}" width="${Math.max(0,x(p.fc)-x(p.gc))}" height="${bandH}" fill="#d4b48c" opacity=".75"/>`;
+    s+=`<rect x="${x(p.fc)}" y="${bandY}" width="${Math.max(0,x(p.drop)-x(p.fc))}" height="${bandH}" fill="#c8886f" opacity=".75"/>`;
+    s+=`<text x="${x(p.charge)+4}" y="${bandY+13}" font-size="11" fill="#333">Dry ${dryP.toFixed(0)}%</text>`;
+    s+=`<text x="${x(p.gc)+4}" y="${bandY+13}" font-size="11" fill="#333">Mai ${maiP.toFixed(0)}%</text>`;
+    s+=`<text x="${x(p.fc)+4}" y="${bandY+13}" font-size="11" fill="#333">Dev ${devP.toFixed(0)}%</text>`;
+  }
+
+  $('graph').innerHTML=s;
 }
 
-function drawPhaseBand(s,x,H,B){
- let p=phaseData();
- if(!p)return s;
- let bandY=H-B+8, bandH=18;
- let dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
- let xa=x(p.charge), xg=x(p.gc), xf=x(p.fc), xd=x(p.drop);
- s+=`<rect x="${xa}" y="${bandY}" width="${Math.max(0,xg-xa)}" height="${bandH}" fill="#f2d6a2" opacity=".75"/>`;
- s+=`<rect x="${xg}" y="${bandY}" width="${Math.max(0,xf-xg)}" height="${bandH}" fill="#d4b48c" opacity=".75"/>`;
- s+=`<rect x="${xf}" y="${bandY}" width="${Math.max(0,xd-xf)}" height="${bandH}" fill="#c8886f" opacity=".75"/>`;
- s+=`<text x="${xa+4}" y="${bandY+13}" font-size="11" fill="#333">Dry ${dryP.toFixed(0)}%</text>`;
- s+=`<text x="${xg+4}" y="${bandY+13}" font-size="11" fill="#333">Mai ${maiP.toFixed(0)}%</text>`;
- s+=`<text x="${xf+4}" y="${bandY+13}" font-size="11" fill="#333">Dev ${devP.toFixed(0)}%</text>`;
- return s;
+function profileData(){
+  return {
+    bean:$('bean').value,dose:$('dose').value,charge:$('charge').value,targetDrop:$('targetDrop').value,
+    pname:$('pname').value,rows:rows,baseSec:baseSec
+  };
 }
-
-function draw(){
- let W=760,H=380,L=45,R=15,T=24,B=58,gw=W-L-R,gh=H-T-B;
- let pts=[],rpts=[],refPts=[],refRpts=[];
- rows.forEach((r,i)=>{
-   let v=parseFloat(r.bt); if(!isNaN(v))pts.push([r.t,v]);
-   let rv=getRor(i); if(rv!=='')rpts.push([r.t,rv]);
- });
- if(reference&&reference.rows){
-   reference.rows.forEach((r,i)=>{
-     let tt=r.t??i*60;
-     let v=parseFloat(r.bt); if(!isNaN(v))refPts.push([tt,v]);
-     let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([tt,rv]);
-   });
- }
- let maxSec=Math.max(600,Math.floor(sec()),rows.length?rows[rows.length-1].t:0,refPts.length?refPts[refPts.length-1][0]:0);
- let minT=0,maxT=230;
- let x=t=>L+gw*t/maxSec;
- let y=v=>T+gh*(1-(v-minT)/(maxT-minT));
- let yr=v=>T+gh*(1-v/30);
- let s=`<rect width="${W}" height="${H}" fill="white"/>`;
- s+=`<path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
- for(let temp=0;temp<=230;temp+=5){
-   let yy=y(temp), major=temp%10===0;
-   s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="${major?'#e8e8e8':'#f4f4f4'}" stroke-width="${major?1:.5}"/>`;
-   if(temp%20===0 || temp===230)s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${temp}</text>`;
- }
- for(let t=0;t<=maxSec;t+=30){
-   let xx=x(t);
-   let major=t%60===0;
-   s+=`<line x1="${xx}" y1="${H-B}" x2="${xx}" y2="${H-B+(major?7:4)}" stroke="${major?'#999':'#ddd'}"/>`;
-   if(major)s+=`<text x="${xx-10}" y="${H-B+28}" font-size="12" fill="#666">${Math.floor(t/60)}</text>`;
- }
- s+=`<path d="M${x(60)} ${yr(12)} L${x(360)} ${yr(12)} L${x(540)} ${yr(11)} L${x(maxSec)} ${yr(10)}" stroke="#ddd" stroke-width="2" stroke-dasharray="3 5" fill="none"/><text x="${W-150}" y="34" font-size="12" fill="#aaa">Target RoR 12/11/10</text>`;
- if(refPts.length){
-   let d=refPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
-   s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`;
- }
- if(refRpts.length){
-   let d=refRpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');
-   s+=`<path d="${d}" stroke="#9aa8c4" stroke-width="2" stroke-dasharray="2 6" opacity=".65" fill="none"/>`;
- }
- if(pts.length){
-   let d=pts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
-   s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;
-   pts.forEach(p=>s+=`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="#222"/>`);
- }
- if(rpts.length){
-   let d=rpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');
-   s+=`<path d="${d}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/><text x="${W-90}" y="18" font-size="12" fill="#888">RoR 0-30</text>`;
- }
- rows.forEach(r=>{
-   if(r.ev){
-     let xx=x(r.t);
-     let vv=parseFloat(r.bt);
-     let yy=isNaN(vv)?T+14:y(vv);
-     s+=`<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" stroke="#b36b00"/>`;
-     s+=`<circle cx="${xx}" cy="${yy}" r="6" fill="#b36b00" opacity=".9"/>`;
-     s+=`<text transform="translate(${xx+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)} ${fmt(r.t)}</text>`;
-   }
- });
- s=drawPhaseBand(s,x,H,B);
- q('g').innerHTML=s;
+function profiles(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return{}}}
+function setProfiles(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));refreshProfiles()}
+function saveProfile(){
+  const name=$('pname').value.trim() || new Date().toISOString().slice(0,16).replace('T',' ');
+  $('pname').value=name;
+  const p=profiles(); p[name]=profileData(); setProfiles(p);
+  showMsg('保存しました：'+name);
 }
-
-function csv(){
- let out='豆名,'+q('bean').value+'\\n投入量,'+q('dose').value+'\\n投入温度,'+q('charge').value+'\\nプロファイル名,'+q('pname').value+'\\n基準プロファイル,'+referenceName+'\\n\\n時刻,BT,RoR,火力,風量,イベント,メモ\\n';
- rows.forEach((r,i)=>{
-   let rr=getRor(i);
-   out+=[fmt(r.t),r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\\n';
- });
- let a=document.createElement('a');
- a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));
- a.download=(q('pname').value||'roast_log')+'.csv';
- a.click();msg('CSVを保存しました');
-}
-function c(v){v=String(v??'');return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
-
-function profiles(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
-function setP(p){localStorage.setItem(KEY,JSON.stringify(p));refP()}
-function saveP(){
- let name=q('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');
- q('pname').value=name;
- let p=profiles();
- p[name]={bean:q('bean').value,dose:q('dose').value,charge:q('charge').value,targetDrop:q('targetDrop').value,pname:name,rows:rows,base:base};
- setP(p);msg('保存しました：'+name);
-}
-function loadP(){
- let name=q('plist').value;if(!name)return;
- let p=profiles()[name];
- q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;
- rows=(p.rows||[]).map((r,i)=>({t:r.t??i*60,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
- rows.sort((a,b)=>a.t-b.t);
- base=p.base||0;run=0;clearInterval(timer);ensureDefaultRows(12);fullUpdate();msg('現在プロファイルとして呼び出しました：'+name);
+function loadProfile(){
+  const name=$('profileList').value;if(!name)return;
+  const p=profiles()[name];if(!p)return;
+  $('bean').value=p.bean||''; $('dose').value=p.dose||''; $('charge').value=p.charge||''; $('targetDrop').value=p.targetDrop||''; $('pname').value=p.pname||name;
+  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
+  sortRows(); baseSec=p.baseSec||0; running=false; clearInterval(timer);
+  updateAll(); showMsg('呼び出しました：'+name);
 }
 function setReference(){
- let name=q('plist').value;if(!name)return;
- reference=profiles()[name];referenceName=name;
- localStorage.setItem(REFKEY,JSON.stringify({name:name,profile:reference}));
- updateRefStatus();draw();msg('基準に設定しました：'+name);
+  const name=$('profileList').value;if(!name)return;
+  reference=profiles()[name]; referenceName=name;
+  localStorage.setItem(REF_KEY,JSON.stringify({name,reference}));
+  updateRefStatus(); drawGraph(); showMsg('基準に設定：'+name);
 }
-function loadSavedReference(){
- try{
-   let r=JSON.parse(localStorage.getItem(REFKEY)||'null');
-   if(r&&r.profile){reference=r.profile;referenceName=r.name||'基準'}
- }catch(e){}
- updateRefStatus();
-}
-function updateRefStatus(){q('refStatus').innerText=reference?'基準プロファイル：'+referenceName:'基準プロファイル：なし'}
 function clearReference(){
- reference=null;referenceName='';
- localStorage.removeItem(REFKEY);
- updateRefStatus();draw();msg('基準を解除しました');
+  reference=null;referenceName='';localStorage.removeItem(REF_KEY);updateRefStatus();drawGraph();
 }
-function newWithReference(){
- if(!confirm('基準プロファイルを残したまま新規焙煎を開始しますか？'))return;
- run=0;base=0;clearInterval(timer);rows=[];
- ['bean','dose','charge','targetDrop','pname','bt','pw','fan'].forEach(id=>q(id).value='');
- ensureDefaultRows(12);fullUpdate();msg('基準を残して新規焙煎を開始しました');
+function loadReference(){
+  try{
+    const r=JSON.parse(localStorage.getItem(REF_KEY)||'null');
+    if(r){reference=r.reference;referenceName=r.name;}
+  }catch(e){}
+  updateRefStatus();
 }
-function delP(){
- let name=q('plist').value;
- if(!name||!confirm(name+'を削除しますか？'))return;
- let p=profiles();delete p[name];setP(p);
- if(referenceName===name)clearReference();
- msg('削除しました：'+name);
+function updateRefStatus(){$('refStatus').innerText=reference?'基準プロファイル：'+referenceName:'基準プロファイル：なし'}
+function newRoastKeepRef(){
+  if(!confirm('新規焙煎を開始しますか？'))return;
+  running=false;baseSec=0;clearInterval(timer);initRows();updateAll();showMsg('新規焙煎を開始');
 }
-function refP(){
- let p=profiles(),names=Object.keys(p).sort().reverse();
- q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+function deleteProfile(){
+  const name=$('profileList').value;if(!name)return;
+  if(!confirm(name+'を削除しますか？'))return;
+  const p=profiles();delete p[name];setProfiles(p);showMsg('削除しました：'+name);
 }
-function ensureDefaultRows(maxMin){
-  for(let s=0;s<=maxMin*60;s+=30)ensureTime(s);
+function refreshProfiles(){
+  const p=profiles(); const names=Object.keys(p).sort().reverse();
+  $('profileList').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
-function setupHoldButton(id, action){
-  const btn=q(id);
-  if(!btn)return;
-  let holdTimer=null, repeatTimer=null, didHold=false;
-  function startHold(e){
-    e.preventDefault();
-    didHold=false;
-    resetAnchor();
-    clearTimeout(holdTimer);clearInterval(repeatTimer);
-    holdTimer=setTimeout(()=>{
-      didHold=true;
-      action();
-      repeatTimer=setInterval(action,260);
-    },550);
-  }
-  function stopHold(e){
-    if(e)e.preventDefault();
-    clearTimeout(holdTimer);clearInterval(repeatTimer);
-    holdTimer=null;repeatTimer=null;
-    if(!didHold)action();
-    didHold=false;
-    resetAnchor();
-  }
-  btn.addEventListener('mousedown',startHold);
-  btn.addEventListener('mouseup',stopHold);
-  btn.addEventListener('mouseleave',()=>{
-    clearTimeout(holdTimer);clearInterval(repeatTimer);
-    holdTimer=null;repeatTimer=null;didHold=false;resetAnchor();
+function downloadCSV(){
+  let out='豆名,'+$('bean').value+'\n投入量,'+$('dose').value+'\n投入温度,'+$('charge').value+'\nプロファイル名,'+$('pname').value+'\n\n時刻,BT,RoR,火力,風量,イベント,メモ\n';
+  rows.forEach((r,i)=>{
+    const rr=rorFor(i);
+    out+=[fmt(r.t),r.bt,rr===''?'':rr.toFixed(1),r.pw,r.fan,r.ev,r.note].map(v=>String(v??'').includes(',')?`"${v}"`:v).join(',')+'\n';
   });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));
+  a.download=($('pname').value||'roast_log')+'.csv';
+  a.click();
 }
 
-ensureDefaultRows(12);
-refP();
-loadSavedReference();
-fullUpdate();
-setupHoldButton('plusBtn',()=>adjustTime(timeStep));
-setupHoldButton('minusBtn',()=>adjustTime(-timeStep));
+function initRows(){
+  rows=[];
+  for(let t=0;t<=12*60;t+=30)ensureRow(t);
+}
+initRows();
+refreshProfiles();
+loadReference();
+updateAll();
 </script>
 </body>
 </html>
