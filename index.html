@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v6</title>
+<title>RM500 ローストロガー Pro v7</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -14,8 +14,8 @@ button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a
 input,select{font-size:15px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px;background:#fff}
 input{width:72px}.wide{width:190px}
 #time{font-size:48px;font-weight:800;text-align:center;margin:8px}
-svg{width:100%;height:360px;background:#fff;border:1px solid #ddd;border-radius:10px}
-table{width:100%;border-collapse:collapse;background:#fff;min-width:880px}
+svg{width:100%;height:380px;background:#fff;border:1px solid #ddd;border-radius:10px}
+table{width:100%;border-collapse:collapse;background:#fff;min-width:930px}
 th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}
 td input{width:58px;padding:6px}.wrap{overflow:auto}
 .rorCell{font-weight:700;color:#333}
@@ -28,11 +28,10 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v6</h1>
-<div class="sub">5刻み入力 / 現在分イベント記録 / 0〜230℃軸 / フェーズ帯表示</div>
+<h1>RM500 ローストロガー Pro v7</h1>
+<div class="sub">BT 1刻み / +10秒 / 分秒イベント記録 / 下部フェーズ帯</div>
 </header>
 
-<!-- 1 豆情報 -->
 <div class="card">
   豆名 <input id="bean" class="wide" placeholder="例 Ethiopia">
   投入量 <input id="dose" type="number" placeholder="g">
@@ -41,46 +40,41 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   目標排出温度 <input id="targetDrop" type="number" placeholder="196">
 </div>
 
-<!-- 2 タイマー -->
 <div class="card">
   <div id="time">00:00</div>
   <button onclick="st()">スタート</button>
   <button class="b" onclick="pa()">一時停止</button>
   <button class="b" onclick="rsT()">タイマーリセット</button>
-  <button onclick="addm()">+1分</button>
+  <button onclick="add10s()">+10秒</button>
   <div id="msg" class="small">準備OK</div>
 </div>
 
-<!-- 3 現在分入力 -->
 <div class="card">
-  BT豆温 <input id="bt" type="number" step="5">
+  BT豆温 <input id="bt" type="number" step="1">
   火力 <input id="pw" type="number" step="5">
   風量 <input id="fan" type="number" step="5">
-  <button onclick="saveNow()">現在分に記録</button>
-  <div class="small">BT・火力・風量は5刻み入力。RoRはBT差から自動計算します。</div>
+  <button onclick="saveNow()">現在時刻に記録</button>
+  <div class="small">BTは1刻み。火力・風量は5刻み。RoRはBT差と時間差から自動計算します。</div>
 </div>
 
-<!-- 4 イベント -->
 <div class="card">
-  <button class="e" onclick="ev('投入')">投入を現在分に記録</button>
-  <button class="e" onclick="ev('ボトム')">ボトムを現在分に記録</button>
-  <button class="e" onclick="ev('GC')">GCを現在分に記録</button>
-  <button class="e" onclick="ev('1ハゼ')">1ハゼを現在分に記録</button>
-  <button class="e" onclick="ev('排出')">排出を現在分に記録</button>
+  <button class="e" onclick="ev('投入')">投入を現在時刻に記録</button>
+  <button class="e" onclick="ev('ボトム')">ボトムを現在時刻に記録</button>
+  <button class="e" onclick="ev('GC')">GCを現在時刻に記録</button>
+  <button class="e" onclick="ev('1ハゼ')">1ハゼを現在時刻に記録</button>
+  <button class="e" onclick="ev('排出')">排出を現在時刻に記録</button>
   <button onclick="csv()">CSV保存</button>
 </div>
 
-<!-- 5 グラフ -->
 <div class="card">
   <span class="pill">黒線：今回BT</span>
   <span class="pill">黒点線：今回RoR</span>
   <span class="pill">青灰線：基準BT</span>
-  <span class="pill">上部帯：フェーズ比率</span>
+  <span class="pill">下部帯：フェーズ比率</span>
   <span class="pill">縦軸：0〜230℃ / 5℃刻み</span>
-  <svg id="g" viewBox="0 0 760 360"></svg>
+  <svg id="g" viewBox="0 0 760 380"></svg>
 </div>
 
-<!-- 6 分析 -->
 <div class="card">
   <b>RM500 分析</b><br>
   <span class="metric">Drying<br><small>投入→GC</small><br><b id="dryM">-</b></span>
@@ -92,7 +86,6 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div class="small" id="analysisNote">フェーズ計算には「投入 / GC / 1ハゼ / 排出」のイベント記録が必要です。</div>
 </div>
 
-<!-- 7 プロファイル -->
 <div class="card">
   <div class="row">
     <button class="g" onclick="saveP()">プロファイル保存</button>
@@ -107,99 +100,106 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div class="small">基準プロファイルを背景に表示したまま、今回の焙煎をリアルタイムで重ねられます。</div>
 </div>
 
-<!-- 8 手入力表 -->
 <div class="card wrap">
 <table>
-<thead><tr><th>分</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
+<thead><tr><th>時刻</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
 <tbody id="tb"></tbody>
 </table>
 </div>
 
 <script>
 let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
-const KEY='rm500_pro_profiles_jp_v6_new';
-const REFKEY='rm500_pro_reference_jp_v6_new';
+const KEY='rm500_pro_profiles_jp_v7';
+const REFKEY='rm500_pro_reference_jp_v7';
 
 function q(x){return document.getElementById(x)}
 function pad(n){return String(n).padStart(2,'0')}
 function fmt(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function sec(){return run?base+Math.floor((Date.now()-t0)/1000):base}
-function min(){return Math.floor(sec()/60)}
+function curSlot(){return Math.floor(sec()/10)*10}
 function msg(x){q('msg').innerText=x}
-function ensure(n){while(rows.length<=n)rows.push({bt:'',pw:'',fan:'',ev:'',note:''})}
+function ensureTime(t){if(!rows.find(r=>r.t===t))rows.push({t:t,bt:'',pw:'',fan:'',ev:'',note:''});rows.sort((a,b)=>a.t-b.t)}
+function currentRow(){let t=curSlot();ensureTime(t);return rows.find(r=>r.t===t)}
+function tick(){q('time').innerText=fmt(sec());ensureTime(curSlot());draw();render();analysis()}
 
-function tick(){q('time').innerText=fmt(sec());ensure(min());draw();render();analysis()}
 function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(tick,300);tick();msg('タイマー開始')}
 function pa(){base=sec();run=0;clearInterval(timer);tick();msg('一時停止')}
 function rsT(){base=0;run=0;clearInterval(timer);tick();msg('タイマーをリセットしました')}
-function addm(){base=(min()+1)*60;tick();msg('+1分しました')}
+function add10s(){base=curSlot()+10;tick();msg('+10秒しました')}
 
 function saveNow(){
-  let i=min();ensure(i);
-  rows[i].bt=q('bt').value;
-  rows[i].pw=q('pw').value;
-  rows[i].fan=q('fan').value;
+  let r=currentRow();
+  r.bt=q('bt').value;
+  r.pw=q('pw').value;
+  r.fan=q('fan').value;
   q('bt').value='';
   q('pw').value='';
   q('fan').value='';
   tick();
-  msg(i+'分に記録しました。入力欄を空にしました。');
+  msg(fmt(r.t)+' に記録しました。入力欄を空にしました。');
 }
 
 function ev(x){
-  let i=min();ensure(i);
-  rows.forEach(r=>{
-    if(r.ev){
-      let parts=r.ev.split('/').filter(p=>p!==x);
-      r.ev=parts.join('/');
+  let r=currentRow();
+  rows.forEach(row=>{
+    if(row.ev){
+      let parts=row.ev.split('/').filter(p=>p!==x);
+      row.ev=parts.join('/');
     }
   });
-  rows[i].ev=rows[i].ev?rows[i].ev+'/'+x:x;
+  r.ev=r.ev?r.ev+'/'+x:x;
   tick();
-  msg(x+'を現在分（'+i+'分）に記録しました');
+  msg(x+'を現在時刻（'+fmt(r.t)+'）に記録しました');
 }
 
-function autoRorAt(arr,i){
-  let a=parseFloat(arr[i]?.bt);
+function autoRorAt(arr,idx){
+  let a=parseFloat(arr[idx]?.bt);
   if(isNaN(a))return'';
-  for(let j=i-1;j>=0;j--){
+  for(let j=idx-1;j>=0;j--){
     let b=parseFloat(arr[j]?.bt);
-    if(!isNaN(b))return(a-b)/(i-j);
+    if(!isNaN(b)){
+      let dt=(arr[idx].t-arr[j].t)/60;
+      if(dt>0)return(a-b)/dt;
+    }
   }
   return'';
 }
-function getRorFrom(arr,i){return autoRorAt(arr,i)}
+function getRorFrom(arr,idx){return autoRorAt(arr,idx)}
 function getRor(i){return getRorFrom(rows,i)}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
 function render(){
   let h='';
-  for(let i=0;i<rows.length;i++){
-    let r=rows[i],rr=getRor(i);
+  rows.forEach((r,i)=>{
+    let rr=getRor(i);
     let rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
-    h+=`<tr><td>${i}</td>
-    <td><input type=number step=5 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis();renderSoon()"></td>
+    h+=`<tr><td>${fmt(r.t)}</td>
+    <td><input type=number step=1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis();renderSoon()"></td>
     <td class="rorCell">${rrText}</td>
     <td><input type=number step=5 value="${esc(r.pw)}" oninput="rows[${i}].pw=this.value"></td>
     <td><input type=number step=5 value="${esc(r.fan)}" oninput="rows[${i}].fan=this.value"></td>
     <td><input style="width:100px" value="${esc(r.ev)}" oninput="rows[${i}].ev=this.value;draw();analysis()"></td>
     <td><input style="width:120px" value="${esc(r.note)}" oninput="rows[${i}].note=this.value"></td></tr>`;
-  }
+  });
   q('tb').innerHTML=h;
 }
 let renderTimer=null;
 function renderSoon(){clearTimeout(renderTimer);renderTimer=setTimeout(()=>{render();draw();analysis()},250)}
 
-function eventMin(name, arr=rows){
-  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return i}
+function eventTime(name, arr=rows){
+  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return arr[i].t}
   return null;
 }
 function eventTemp(name, arr=rows){
-  let i=eventMin(name,arr);if(i===null)return null;
-  let v=parseFloat(arr[i].bt);return isNaN(v)?null:v;
+  for(let i=0;i<arr.length;i++){
+    if((arr[i].ev||'').includes(name)){
+      let v=parseFloat(arr[i].bt);return isNaN(v)?null:v;
+    }
+  }
+  return null;
 }
 function phaseData(){
- let charge=eventMin('投入'), gc=eventMin('GC'), fc=eventMin('1ハゼ'), drop=eventMin('排出');
+ let charge=eventTime('投入'), gc=eventTime('GC'), fc=eventTime('1ハゼ'), drop=eventTime('排出');
  if(charge===null) charge=0;
  if(gc!==null && fc!==null && drop!==null && drop>0){
    return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
@@ -207,16 +207,17 @@ function phaseData(){
  return null;
 }
 
+function durTxt(secVal){return fmt(secVal)}
 function analysis(){
  let p=phaseData();
- let drop=eventMin('排出'), dropT=eventTemp('排出');
- q('totalM').innerText=drop!==null?drop+'分':'-';
+ let drop=eventTime('排出'), dropT=eventTemp('排出');
+ q('totalM').innerText=drop!==null?fmt(drop):'-';
  q('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
  if(p){
    let dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
-   q('dryM').innerText=p.dry+'分 / '+dryP.toFixed(0)+'%';
-   q('maiM').innerText=p.mai+'分 / '+maiP.toFixed(0)+'%';
-   q('devM').innerText=p.dev+'分 / '+devP.toFixed(0)+'%';
+   q('dryM').innerText=durTxt(p.dry)+' / '+dryP.toFixed(0)+'%';
+   q('maiM').innerText=durTxt(p.mai)+' / '+maiP.toFixed(0)+'%';
+   q('devM').innerText=durTxt(p.dev)+' / '+devP.toFixed(0)+'%';
    q('dtrM').innerText=devP.toFixed(1)+'%';
    let note=[];
    if(devP<10)note.push('DTR低め');
@@ -230,10 +231,10 @@ function analysis(){
  }
 }
 
-function drawPhaseBand(s,x){
+function drawPhaseBand(s,x,H,B){
  let p=phaseData();
  if(!p)return s;
- let bandY=8, bandH=18;
+ let bandY=H-B+8, bandH=18;
  let dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
  let xa=x(p.charge), xg=x(p.gc), xf=x(p.fc), xd=x(p.drop);
  s+=`<rect x="${xa}" y="${bandY}" width="${Math.max(0,xg-xa)}" height="${bandH}" fill="#f2d6a2" opacity=".75"/>`;
@@ -246,34 +247,32 @@ function drawPhaseBand(s,x){
 }
 
 function draw(){
- let W=760,H=360,L=45,R=15,T=34,B=34,gw=W-L-R,gh=H-T-B;
+ let W=760,H=380,L=45,R=15,T=24,B=58,gw=W-L-R,gh=H-T-B;
  let pts=[],rpts=[],refPts=[],refRpts=[];
- for(let i=0;i<rows.length;i++){
-   let v=parseFloat(rows[i].bt); if(!isNaN(v))pts.push([i,v]);
-   let rv=getRor(i); if(rv!=='')rpts.push([i,rv]);
- }
+ rows.forEach((r,i)=>{
+   let v=parseFloat(r.bt); if(!isNaN(v))pts.push([r.t,v]);
+   let rv=getRor(i); if(rv!=='')rpts.push([r.t,rv]);
+ });
  if(reference&&reference.rows){
-   for(let i=0;i<reference.rows.length;i++){
-     let v=parseFloat(reference.rows[i].bt); if(!isNaN(v))refPts.push([i,v]);
-     let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([i,rv]);
-   }
+   reference.rows.forEach((r,i)=>{
+     let v=parseFloat(r.bt); if(!isNaN(v))refPts.push([r.t??i*60,v]);
+     let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([r.t??i*60,rv]);
+   });
  }
- let maxM=Math.max(10,rows.length-1,refPts.length?refPts[refPts.length-1][0]:0);
+ let maxSec=Math.max(600,curSlot(),rows.length?rows[rows.length-1].t:0,refPts.length?refPts[refPts.length-1][0]:0);
  let minT=0,maxT=230;
- let x=i=>L+gw*i/maxM;
+ let x=t=>L+gw*t/maxSec;
  let y=v=>T+gh*(1-(v-minT)/(maxT-minT));
  let yr=v=>T+gh*(1-v/30);
  let s=`<rect width="${W}" height="${H}" fill="white"/>`;
- s=drawPhaseBand(s,x);
  s+=`<path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
- for(let t=0;t<=230;t+=5){
-   let yy=y(t);
-   let major=t%10===0;
+ for(let temp=0;temp<=230;temp+=5){
+   let yy=y(temp), major=temp%10===0;
    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="${major?'#e8e8e8':'#f4f4f4'}" stroke-width="${major?1:.5}"/>`;
-   if(t%20===0 || t===230){s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${t}</text>`}
+   if(temp%20===0 || temp===230)s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${temp}</text>`;
  }
- for(let i=0;i<=maxM;i+=2)s+=`<text x="${x(i)-6}" y="${H-12}" font-size="12" fill="#666">${i}</text>`;
- s+=`<path d="M${x(1)} ${yr(12)} L${x(6)} ${yr(12)} L${x(9)} ${yr(11)} L${x(maxM)} ${yr(10)}" stroke="#ddd" stroke-width="2" stroke-dasharray="3 5" fill="none"/><text x="${W-150}" y="50" font-size="12" fill="#aaa">Target RoR 12/11/10</text>`;
+ for(let t=0;t<=maxSec;t+=120)s+=`<text x="${x(t)-10}" y="${H-B+28}" font-size="12" fill="#666">${Math.floor(t/60)}</text>`;
+ s+=`<path d="M${x(60)} ${yr(12)} L${x(360)} ${yr(12)} L${x(540)} ${yr(11)} L${x(maxSec)} ${yr(10)}" stroke="#ddd" stroke-width="2" stroke-dasharray="3 5" fill="none"/><text x="${W-150}" y="34" font-size="12" fill="#aaa">Target RoR 12/11/10</text>`;
  if(refPts.length){
    let d=refPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
    s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`;
@@ -289,24 +288,26 @@ function draw(){
  }
  if(rpts.length){
    let d=rpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');
-   s+=`<path d="${d}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/><text x="${W-90}" y="34" font-size="12" fill="#888">RoR 0-30</text>`;
+   s+=`<path d="${d}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/><text x="${W-90}" y="18" font-size="12" fill="#888">RoR 0-30</text>`;
  }
  if(reference&&reference.rows){
    reference.rows.forEach((r,i)=>{
-     if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#8091b3" opacity=".35"/><text transform="translate(${x(i)+2},${H-B-4}) rotate(-90)" font-size="10" fill="#8091b3">${esc(r.ev)}</text>`;
+     let tt=r.t??i*60;
+     if(r.ev)s+=`<line x1="${x(tt)}" y1="${T}" x2="${x(tt)}" y2="${H-B}" stroke="#8091b3" opacity=".35"/><text transform="translate(${x(tt)+2},${H-B-4}) rotate(-90)" font-size="10" fill="#8091b3">${esc(r.ev)}</text>`;
    });
  }
- rows.forEach((r,i)=>{
-   if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#b36b00"/><text transform="translate(${x(i)+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)}</text>`;
+ rows.forEach(r=>{
+   if(r.ev)s+=`<line x1="${x(r.t)}" y1="${T}" x2="${x(r.t)}" y2="${H-B}" stroke="#b36b00"/><text transform="translate(${x(r.t)+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)}</text>`;
  });
+ s=drawPhaseBand(s,x,H,B);
  q('g').innerHTML=s;
 }
 
 function csv(){
- let out='豆名,'+q('bean').value+'\\n投入量,'+q('dose').value+'\\n投入温度,'+q('charge').value+'\\nプロファイル名,'+q('pname').value+'\\n基準プロファイル,'+referenceName+'\\n\\n分,BT,RoR,火力,風量,イベント,メモ\\n';
+ let out='豆名,'+q('bean').value+'\\n投入量,'+q('dose').value+'\\n投入温度,'+q('charge').value+'\\nプロファイル名,'+q('pname').value+'\\n基準プロファイル,'+referenceName+'\\n\\n時刻,BT,RoR,火力,風量,イベント,メモ\\n';
  rows.forEach((r,i)=>{
    let rr=getRor(i);
-   out+=[i,r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\\n';
+   out+=[fmt(r.t),r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\\n';
  });
  let a=document.createElement('a');
  a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));
@@ -328,8 +329,9 @@ function loadP(){
  let name=q('plist').value;if(!name)return;
  let p=profiles()[name];
  q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;
- rows=(p.rows||[]).map(r=>({bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
- base=p.base||0;run=0;clearInterval(timer);ensure(12);tick();msg('現在プロファイルとして呼び出しました：'+name);
+ rows=(p.rows||[]).map((r,i)=>({t:r.t??i*60,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
+ rows.sort((a,b)=>a.t-b.t);
+ base=p.base||0;run=0;clearInterval(timer);ensureTime(curSlot());tick();msg('現在プロファイルとして呼び出しました：'+name);
 }
 function setReference(){
  let name=q('plist').value;if(!name)return;
@@ -354,7 +356,7 @@ function newWithReference(){
  if(!confirm('基準プロファイルを残したまま新規焙煎を開始しますか？'))return;
  run=0;base=0;clearInterval(timer);rows=[];
  ['bean','dose','charge','targetDrop','pname','bt','pw','fan'].forEach(id=>q(id).value='');
- ensure(12);tick();msg('基準を残して新規焙煎を開始しました');
+ ensureTime(0);tick();msg('基準を残して新規焙煎を開始しました');
 }
 function delP(){
  let name=q('plist').value;
@@ -368,7 +370,8 @@ function refP(){
  q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 
-ensure(12);refP();loadSavedReference();tick();
+ensureTime(0);refP();loadSavedReference();tick();
 </script>
 </body>
 </html>
+
