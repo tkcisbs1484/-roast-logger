@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー v22</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RM500 Graph Main v24</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -12,240 +12,184 @@ h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.85;margin-top:4px}
 button{font-size:15px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff}
 button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a}button.r{background:#9b1c1c}
 input,select{font-size:15px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px;background:#fff}
-input{width:72px}.wide{width:190px}
-#time{font-size:48px;font-weight:800;text-align:center;margin:8px;user-select:none}
-svg{width:100%;height:380px;background:#fff;border:1px solid #ddd;border-radius:10px}
-table{width:100%;border-collapse:collapse;background:#fff;min-width:900px}
-th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}
-td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
-.rorCell{font-weight:700;color:#333}
-.small{font-size:12px;color:#666;line-height:1.5}.row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+input{width:76px}.wide{width:190px}
+#time{font-size:48px;font-weight:800;text-align:center;margin:8px}
+svg{width:100%;height:430px;background:#fff;border:1px solid #ddd;border-radius:10px}
+.small{font-size:12px;color:#666;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .pill{display:inline-block;background:#eee;border-radius:999px;padding:4px 8px;font-size:12px;margin:2px}
 .metric{display:inline-block;min-width:125px;background:#f3f3f3;border-radius:10px;padding:8px;margin:4px;font-size:13px}
 .metric b{font-size:16px}.warn{color:#9b1c1c;font-weight:bold}
 .refbox{background:#eef3ff;border:1px solid #c8d7ff;border-radius:10px;padding:8px;margin-top:8px;font-size:13px}
+.log{font-size:13px;line-height:1.6;max-height:160px;overflow:auto;background:#fafafa;border-radius:10px;padding:8px}
 </style>
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー v22</h1>
-<div class="sub">30秒表示欄 / BTは実時刻でグラフ反映 / RoR時刻順安定計算 / 軽量版</div>
+<h1>RM500 ã­ã¼ã¹ãã­ã¬ã¼ Graph Main v24</h1>
+<div class="sub">è¡¨ãªã / ãã©ã¼ã å¥åã¡ã¤ã³ / BTã»ã¹ã ã¼ãºRoRã»ç«åã»é¢¨éã°ã©ãè¡¨ç¤º</div>
 </header>
 
 <div class="card">
-  豆名 <input id="bean" class="wide" placeholder="例 Ethiopia">
-  投入量 <input id="dose" type="number" placeholder="g">
-  投入温度 <input id="charge" type="number" placeholder="℃">
-  <br>プロファイル名 <input id="pname" class="wide" placeholder="例 2026-04-28 Ethiopia">
-  目標排出温度 <input id="targetDrop" type="number" placeholder="196">
+è±å <input id="bean" class="wide" placeholder="ä¾ Ethiopia">
+æå¥é <input id="dose" type="number" placeholder="g">
+æå¥æ¸©åº¦ <input id="charge" type="number" placeholder="â">
+<br>ãã­ãã¡ã¤ã«å <input id="pname" class="wide" placeholder="ä¾ 2026-04-28 Ethiopia">
 </div>
 
 <div class="card">
-  <div id="time">00:00</div>
-  <button onclick="startTimer()">スタート</button>
-  <button class="b" onclick="pauseTimer()">一時停止</button>
-  <button class="b" onclick="resetTimer()">タイマーリセット</button>
-  <button onclick="adjustTime(-10)">−10秒</button>
-  <button onclick="adjustTime(10)">＋10秒</button>
-  <div id="msg" class="small">準備OK</div>
+<div id="time">00:00</div>
+<button onclick="startTimer()">ã¹ã¿ã¼ã</button>
+<button class="b" onclick="pauseTimer()">ä¸æåæ­¢</button>
+<button class="b" onclick="resetTimer()">ãªã»ãã</button>
+<button onclick="adjustTime(-10)">â10ç§</button>
+<button onclick="adjustTime(10)">ï¼10ç§</button>
+<div id="msg" class="small">æºåOK</div>
 </div>
 
 <div class="card">
-  BT豆温 <input id="bt" type="number" step="1">
-  火力 <input id="pw" type="number" step="5">
-  風量 <input id="fan" type="number" step="5">
-  <button onclick="saveNow()">現在時刻に記録</button>
-  <div class="small">BTは現在の分:秒で記録し、グラフにもその時刻で反映します。表は入力しやすいように30秒ごと＋実時刻行を表示します。</div>
+BTè±æ¸© <input id="bt" type="number" step="1">
+ç«å <input id="pw" type="number" step="5">
+é¢¨é <input id="fan" type="number" step="5">
+<button onclick="savePoint()">ç¾å¨æå»ã«è¨é²</button>
+<div class="small">ãã©ã¼ã å¥åãã¡ã¤ã³ã«è¨é²ãã¾ããBTã»ç«åã»é¢¨éãã°ã©ãã¸å³åæ ãããRoRã¯èªåè¨ç®ï¼ã¹ã ã¼ãºåãã¾ãã</div>
 </div>
 
 <div class="card">
-  <button class="e" onclick="saveEvent('投入')">投入</button>
-  <button class="e" onclick="saveEvent('ボトム')">ボトム</button>
-  <button class="e" onclick="saveEvent('GC')">GC</button>
-  <button class="e" onclick="saveEvent('1ハゼ')">1ハゼ</button>
-  <button class="e" onclick="saveEvent('排出')">排出</button>
-  <button onclick="downloadCSV()">CSV保存</button>
+<button class="e" onclick="saveEvent('æå¥')">æå¥</button>
+<button class="e" onclick="saveEvent('ããã ')">ããã </button>
+<button class="e" onclick="saveEvent('GC')">GC</button>
+<button class="e" onclick="saveEvent('1ãã¼')">1ãã¼</button>
+<button class="e" onclick="saveEvent('æåº')">æåº</button>
+<button onclick="downloadCSV()">CSVä¿å­</button>
 </div>
 
 <div class="card">
-  <span class="pill">黒線：BT</span>
-  <span class="pill">点線：RoR</span>
-  <span class="pill">青灰線：基準BT</span>
-  <span class="pill">下部帯：フェーズ比率</span>
-  <span class="pill">縦軸：0〜230℃</span>
-  <svg id="graph" viewBox="0 0 760 380"></svg>
+<span class="pill">é»ç·ï¼BT</span>
+<span class="pill">é»ç¹ç·ï¼RoRã¹ã ã¼ãº</span>
+<span class="pill">ç´°ç·ï¼ç«å</span>
+<span class="pill">ç ´ç·ï¼é¢¨é</span>
+<span class="pill">ç¹ï¼BTæ¸©åº¦è¡¨ç¤º</span>
+<svg id="graph" viewBox="0 0 760 430"></svg>
 </div>
 
 <div class="card">
-  <b>RM500 分析</b><br>
-  <span class="metric">Drying<br><small>投入→GC</small><br><b id="dryM">-</b></span>
-  <span class="metric">Maillard<br><small>GC→1ハゼ</small><br><b id="maiM">-</b></span>
-  <span class="metric">Development<br><small>1ハゼ→排出</small><br><b id="devM">-</b></span>
-  <span class="metric">DTR<br><small>デベロップメント比率</small><br><b id="dtrM">-</b></span>
-  <span class="metric">Total Time<br><small>総焙煎時間</small><br><b id="totalM">-</b></span>
-  <span class="metric">Drop Temp<br><small>排出温度</small><br><b id="dropM">-</b></span>
-  <div class="small" id="analysisNote">投入 / GC / 1ハゼ / 排出を記録すると自動計算します。</div>
+<b>RM500 åæ</b><br>
+<span class="metric">Drying<br><small>æå¥âGC</small><br><b id="dryM">-</b></span>
+<span class="metric">Maillard<br><small>GCâ1ãã¼</small><br><b id="maiM">-</b></span>
+<span class="metric">Development<br><small>1ãã¼âæåº</small><br><b id="devM">-</b></span>
+<span class="metric">DTR<br><small>ããã­ããã¡ã³ãæ¯ç</small><br><b id="dtrM">-</b></span>
+<span class="metric">Total Time<br><small>ç·ççæé</small><br><b id="totalM">-</b></span>
+<span class="metric">Drop Temp<br><small>æåºæ¸©åº¦</small><br><b id="dropM">-</b></span>
+<div class="small" id="analysisNote">æå¥ / GC / 1ãã¼ / æåºãè¨é²ããã¨èªåè¨ç®ãã¾ãã</div>
 </div>
 
 <div class="card">
-  <div class="row">
-    <button class="g" onclick="saveProfile()">プロファイル保存</button>
-    <select id="profileList" class="wide"></select>
-    <button onclick="loadProfile()">呼出</button>
-    <button onclick="setReference()">基準に設定</button>
-    <button class="b" onclick="newRoastKeepRef()">基準を残して新規焙煎</button>
-    <button class="b" onclick="clearReference()">基準解除</button>
-    <button class="r" onclick="deleteProfile()">削除</button>
-  </div>
-  <div class="refbox" id="refStatus">基準プロファイル：なし</div>
+<div class="row">
+<button class="g" onclick="saveProfile()">ãã­ãã¡ã¤ã«ä¿å­</button>
+<select id="profileList" class="wide"></select>
+<button onclick="loadProfile()">å¼åº</button>
+<button onclick="setReference()">åºæºã«è¨­å®</button>
+<button class="b" onclick="clearReference()">åºæºè§£é¤</button>
+<button class="r" onclick="deleteProfile()">åé¤</button>
+</div>
+<div class="refbox" id="refStatus">åºæºãã­ãã¡ã¤ã«ï¼ãªã</div>
 </div>
 
-<div class="card wrap">
-<table>
-<thead><tr><th>時刻</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
-<tbody id="tbody"></tbody>
-</table>
+<div class="card">
+<b>è¨é²ã­ã°</b>
+<div class="log" id="log"></div>
 </div>
 
 <script>
-const PROFILE_KEY='rm500_v21_profiles';
-const REF_KEY='rm500_v21_reference';
-let rows=[];
-let reference=null;
-let referenceName='';
-let running=false;
-let startedAt=0;
-let baseSec=0;
-let timer=null;
+const PROFILE_KEY='rm500_graph_main_profiles_v24';
+const REF_KEY='rm500_graph_main_reference_v24';
+let rows=[],reference=null,referenceName='',running=false,startedAt=0,baseSec=0,timer=null;
 
 function $(id){return document.getElementById(id)}
 function pad(n){return String(n).padStart(2,'0')}
 function fmt(s){s=Math.max(0,Math.floor(s));return pad(Math.floor(s/60))+':'+pad(s%60)}
 function nowSec(){return running ? baseSec + Math.floor((Date.now()-startedAt)/1000) : baseSec}
-function nearest30(s){return Math.round(Math.floor(s)/30)*30}
 function showMsg(t){$('msg').innerText=t}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
-
-function makeRow(t,manual=false){return {t:t,bt:'',pw:'',fan:'',ev:'',note:'',manual:manual}}
 function sortRows(){rows.sort((a,b)=>a.t-b.t)}
-function ensureRow(t, manual=false){
+
+function getOrCreateRow(t){
   t=Math.max(0,Math.floor(t));
   let r=rows.find(x=>x.t===t);
-  if(!r){
-    r=makeRow(t, manual);
-    rows.push(r);
-    sortRows();
-  }else if(manual){
-    r.manual=true;
-  }
+  if(!r){r={t:t,bt:'',pw:'',fan:'',ev:'',note:''};rows.push(r);sortRows()}
   return r;
 }
-function initRows(){
-  rows=[];
-  for(let t=0;t<=12*60;t+=30)ensureRow(t,true);
-}
-function updateAll(){ $('time').innerText=fmt(nowSec()); renderTable(); updateAnalysis(); drawGraph(); }
+
+function updateAll(){ $('time').innerText=fmt(nowSec()); updateAnalysis(); drawGraph(); renderLog(); }
 function updateLight(){ $('time').innerText=fmt(nowSec()); drawGraph(); }
 
-function startTimer(){ if(running)return; running=true; startedAt=Date.now(); clearInterval(timer); timer=setInterval(updateLight,500); updateAll(); showMsg('タイマー開始'); }
-function pauseTimer(){ baseSec=nowSec(); running=false; clearInterval(timer); updateAll(); showMsg('一時停止'); }
-function resetTimer(){ baseSec=0; running=false; clearInterval(timer); updateAll(); showMsg('タイマーリセット'); }
-function adjustTime(delta){ baseSec=Math.max(0, nowSec()+delta); startedAt=Date.now(); updateAll(); showMsg((delta>0?'+':'')+delta+'秒'); }
+function startTimer(){ if(running)return; running=true; startedAt=Date.now(); clearInterval(timer); timer=setInterval(updateLight,500); updateAll(); showMsg('ã¿ã¤ãã¼éå§'); }
+function pauseTimer(){ baseSec=nowSec(); running=false; clearInterval(timer); updateAll(); showMsg('ä¸æåæ­¢'); }
+function resetTimer(){ if(!confirm('è¨é²ããªã»ãããã¾ããï¼'))return; baseSec=0; running=false; clearInterval(timer); rows=[]; updateAll(); showMsg('ãªã»ãããã¾ãã'); }
+function adjustTime(delta){ baseSec=Math.max(0,nowSec()+delta); startedAt=Date.now(); updateAll(); showMsg((delta>0?'+':'')+delta+'ç§'); }
 
-function saveNow(){
+function savePoint(){
   const t=Math.floor(nowSec());
-  const r=ensureRow(t,false);
-  r.bt=$('bt').value;
-  r.pw=$('pw').value;
-  r.fan=$('fan').value;
+  const bt=$('bt').value, pw=$('pw').value, fan=$('fan').value;
+  if(bt==='' && pw==='' && fan===''){showMsg('BTã»ç«åã»é¢¨éã®ã©ãããå¥åãã¦ãã ãã');return}
+  const r=getOrCreateRow(t);
+  if(bt!=='')r.bt=bt;
+  if(pw!=='')r.pw=pw;
+  if(fan!=='')r.fan=fan;
   $('bt').value=''; $('pw').value=''; $('fan').value='';
-  updateAll();
-  showMsg(fmt(t)+' にBT/火力/風量を記録しました');
+  updateAll(); showMsg(fmt(t)+' ã«è¨é²ãã¾ãã');
 }
+
 function saveEvent(name){
-  const raw=nowSec();
-  const t=nearest30(raw);
-  rows.forEach(r=>{
-    if(r.ev){
-      r.ev=r.ev.split('/').filter(x=>x!==name).join('/');
-    }
-  });
-  const r=ensureRow(t);
-  r.ev = r.ev ? r.ev+'/'+name : name;
-  updateAll();
-  showMsg(name+'：'+fmt(raw)+' → '+fmt(t)+' に記録');
+  const t=Math.floor(nowSec());
+  rows.forEach(r=>{if(r.ev)r.ev=r.ev.split('/').filter(x=>x!==name).join('/')});
+  const r=getOrCreateRow(t);
+  r.ev=r.ev?r.ev+'/'+name:name;
+  updateAll(); showMsg(name+'ã '+fmt(t)+' ã«è¨é²');
 }
 
-function rorFor(index, arr=rows){
-  const target=arr[index];
-  if(!target)return '';
-  const currentBT=parseFloat(target.bt);
-  if(isNaN(currentBT))return '';
-
-  const sorted=arr
-    .filter(r=>!isNaN(parseFloat(r.bt)))
-    .sort((a,b)=>a.t-b.t);
-
-  const i=sorted.findIndex(r=>r===target || r.t===target.t);
-  if(i<=0)return '';
-
-  for(let j=i-1;j>=0;j--){
-    const prevBT=parseFloat(sorted[j].bt);
-    const dt=(sorted[i].t-sorted[j].t)/60;
-    if(!isNaN(prevBT) && dt>0){
-      return (currentBT-prevBT)/dt;
-    }
+function btRows(arr=rows){return arr.filter(r=>!isNaN(parseFloat(r.bt))).sort((a,b)=>a.t-b.t)}
+function rawRorPoints(arr=rows){
+  const pts=btRows(arr), out=[];
+  for(let i=1;i<pts.length;i++){
+    const dt=(pts[i].t-pts[i-1].t)/60;
+    if(dt<=0)continue;
+    out.push({t:pts[i].t,ror:(parseFloat(pts[i].bt)-parseFloat(pts[i-1].bt))/dt});
   }
-  return '';
+  return out;
+}
+function smoothRorPoints(arr=rows){
+  const raw=rawRorPoints(arr), out=[];
+  for(let i=0;i<raw.length;i++){
+    let vals=[];
+    for(let j=Math.max(0,i-1);j<=Math.min(raw.length-1,i+1);j++)vals.push(raw[j].ror);
+    out.push({t:raw[i].t,ror:vals.reduce((a,b)=>a+b,0)/vals.length});
+  }
+  return out;
+}
+function rorAtRow(row, arr=rows){
+  const sm=smoothRorPoints(arr);
+  const p=sm.find(x=>x.t===row.t);
+  return p?p.ror:'';
 }
 
-function renderTable(){
-  let html='';
-  rows.forEach((r,i)=>{
-    const rr=rorFor(i);
-    const rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
-    html+=`<tr>
-      <td>${fmt(r.t)}</td>
-      <td><input type="number" step="1" value="${esc(r.bt)}" onchange="rows[${i}].bt=this.value; updateAll();"></td>
-      <td class="rorCell">${rrText}</td>
-      <td><input type="number" step="5" value="${esc(r.pw)}" onchange="rows[${i}].pw=this.value; updateAll();"></td>
-      <td><input type="number" step="5" value="${esc(r.fan)}" onchange="rows[${i}].fan=this.value; updateAll();"></td>
-      <td><input style="width:100px" value="${esc(r.ev)}" onchange="rows[${i}].ev=this.value; updateAll();"></td>
-      <td><input style="width:120px" value="${esc(r.note)}" onchange="rows[${i}].note=this.value; updateAll();"></td>
-    </tr>`;
-  });
-  $('tbody').innerHTML=html;
-}
-
-function eventTime(name, arr=rows){
-  const r=arr.find(x=>(x.ev||'').includes(name));
-  return r ? r.t : null;
-}
-function eventTemp(name, arr=rows){
-  const r=arr.find(x=>(x.ev||'').includes(name));
-  if(!r)return null;
-  const v=parseFloat(r.bt);
-  return isNaN(v)?null:v;
-}
+function eventTime(name, arr=rows){const r=arr.find(x=>(x.ev||'').includes(name));return r?r.t:null}
+function eventTemp(name, arr=rows){const r=arr.find(x=>(x.ev||'').includes(name));if(!r)return null;const v=parseFloat(r.bt);return isNaN(v)?null:v}
 function phase(){
-  let charge=eventTime('投入');
-  const gc=eventTime('GC'), fc=eventTime('1ハゼ'), drop=eventTime('排出');
+  let charge=eventTime('æå¥'); const gc=eventTime('GC'), fc=eventTime('1ãã¼'), drop=eventTime('æåº');
   if(charge===null)charge=0;
-  if(gc!==null && fc!==null && drop!==null && drop>0){
-    return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
-  }
+  if(gc!==null && fc!==null && drop!==null && drop>0)return {charge,gc,fc,drop,dry:gc-charge,mai:fc-gc,dev:drop-fc,total:drop};
   return null;
 }
+
 function updateAnalysis(){
-  const p=phase();
-  const drop=eventTime('排出');
-  const dropT=eventTemp('排出');
+  const p=phase(), drop=eventTime('æåº'), dropT=eventTemp('æåº');
   $('totalM').innerText=drop!==null?fmt(drop):'-';
-  $('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
+  $('dropM').innerText=dropT!==null?dropT.toFixed(1)+'â':'-';
   if(!p){
     $('dryM').innerText='-'; $('maiM').innerText='-'; $('devM').innerText='-'; $('dtrM').innerText='-';
-    $('analysisNote').innerText='投入 / GC / 1ハゼ / 排出を記録すると自動計算します。';
-    return;
+    $('analysisNote').innerText='æå¥ / GC / 1ãã¼ / æåºãè¨é²ããã¨èªåè¨ç®ãã¾ãã'; return;
   }
   const dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
   $('dryM').innerText=fmt(p.dry)+' / '+dryP.toFixed(0)+'%';
@@ -253,25 +197,20 @@ function updateAnalysis(){
   $('devM').innerText=fmt(p.dev)+' / '+devP.toFixed(0)+'%';
   $('dtrM').innerText=devP.toFixed(1)+'%';
   let notes=[];
-  if(devP<10)notes.push('DTR低め');
-  if(devP>20)notes.push('DTR高め');
-  if(dryP>65)notes.push('ドライ長め');
-  if(maiP<20)notes.push('メイラード短め');
-  $('analysisNote').innerHTML=notes.length?'<span class="warn">'+notes.join(' / ')+'</span>':'フェーズバランスは読みやすい範囲です。';
+  if(devP<10)notes.push('DTRä½ã'); if(devP>20)notes.push('DTRé«ã'); if(dryP>65)notes.push('ãã©ã¤é·ã'); if(maiP<20)notes.push('ã¡ã¤ã©ã¼ãç­ã');
+  $('analysisNote').innerHTML=notes.length?'<span class="warn">'+notes.join(' / ')+'</span>':'ãã§ã¼ãºãã©ã³ã¹ã¯èª­ã¿ãããç¯å²ã§ãã';
 }
 
 function drawGraph(){
-  const W=760,H=380,L=45,R=15,T=24,B=58,gw=W-L-R,gh=H-T-B;
-  const maxSec=Math.max(600, nowSec(), rows[rows.length-1]?.t||0, reference?.rows?.[reference.rows.length-1]?.t||0);
-  const x=t=>L+gw*t/maxSec;
-  const y=v=>T+gh*(1-v/230);
-  const yr=v=>T+gh*(1-v/30);
-  let s=`<rect width="${W}" height="${H}" fill="white"/>`;
-  s+=`<path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
-
-  for(let temp=0;temp<=230;temp+=5){
-    const yy=y(temp), major=temp%10===0;
-    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="${major?'#e8e8e8':'#f4f4f4'}" stroke-width="${major?1:.5}"/>`;
+  const W=760,H=430,L=45,R=15,T=24,B=78,gw=W-L-R,gh=H-T-B;
+  const maxRowT=rows.length?Math.max(...rows.map(r=>r.t)):0;
+  const maxRefT=reference?.rows?.length?Math.max(...reference.rows.map(r=>r.t||0)):0;
+  const maxSec=Math.max(600,nowSec(),maxRowT,maxRefT);
+  const x=t=>L+gw*t/maxSec, yBT=v=>T+gh*(1-v/230), yRor=v=>T+gh*(1-Math.max(0,Math.min(30,v))/30), yPct=v=>T+gh*(1-Math.max(0,Math.min(100,v))/100);
+  let s=`<rect width="${W}" height="${H}" fill="white"/><path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
+  for(let temp=0;temp<=230;temp+=10){
+    const yy=yBT(temp);
+    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eee"/>`;
     if(temp%20===0 || temp===230)s+=`<text x="5" y="${yy+4}" font-size="11" fill="#666">${temp}</text>`;
   }
   for(let t=0;t<=maxSec;t+=60){
@@ -279,38 +218,49 @@ function drawGraph(){
     s+=`<text x="${x(t)-8}" y="${H-B+28}" font-size="12" fill="#666">${Math.floor(t/60)}</text>`;
   }
 
-  function pathFor(arr, kind){
-    const pts=arr.filter(r=>!isNaN(parseFloat(r.bt))).map(r=>[r.t,parseFloat(r.bt)]);
-    if(!pts.length)return '';
-    return pts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
-  }
   if(reference?.rows){
-    const d=pathFor(reference.rows);
-    if(d)s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`;
+    const refPts=btRows(reference.rows);
+    if(refPts.length){
+      const d=refPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yBT(parseFloat(p.bt))).join(' ');
+      s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".35" fill="none"/>`;
+    }
   }
-  const d=pathFor(rows);
-  if(d)s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;
 
-  rows.forEach(r=>{
-    const v=parseFloat(r.bt);
-    if(!isNaN(v))s+=`<circle cx="${x(r.t)}" cy="${y(v)}" r="4" fill="#222"/>`;
-  });
+  const pts=btRows(rows);
+  if(pts.length){
+    const d=pts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yBT(parseFloat(p.bt))).join(' ');
+    s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;
+    pts.forEach(p=>{
+      const bt=parseFloat(p.bt);
+      s+=`<circle cx="${x(p.t)}" cy="${yBT(bt)}" r="4" fill="#222"/>`;
+      s+=`<text x="${x(p.t)+5}" y="${yBT(bt)-6}" font-size="11" fill="#222">${bt.toFixed(0)}</text>`;
+    });
+  }
 
-  const rorPts=[];
-  rows.forEach((r,i)=>{
-    const rr=rorFor(i);
-    if(rr!=='')rorPts.push([r.t,rr]);
-  });
+  const rorPts=smoothRorPoints(rows);
   if(rorPts.length){
-    const rd=rorPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');
-    s+=`<path d="${rd}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/>`;
+    const d=rorPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yRor(p.ror)).join(' ');
+    s+=`<path d="${d}" stroke="#777" stroke-width="2" stroke-dasharray="5 4" fill="none"/>`;
+    s+=`<text x="${W-105}" y="18" font-size="12" fill="#777">RoR smooth</text>`;
+  }
+
+  const pwPts=rows.filter(r=>!isNaN(parseFloat(r.pw))).sort((a,b)=>a.t-b.t);
+  if(pwPts.length){
+    const d=pwPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yPct(parseFloat(p.pw))).join(' ');
+    s+=`<path d="${d}" stroke="#444" stroke-width="1.8" fill="none" opacity=".75"/>`;
+    pwPts.forEach(p=>s+=`<text x="${x(p.t)+4}" y="${yPct(parseFloat(p.pw))+12}" font-size="10" fill="#444">P${p.pw}</text>`);
+  }
+
+  const fanPts=rows.filter(r=>!isNaN(parseFloat(r.fan))).sort((a,b)=>a.t-b.t);
+  if(fanPts.length){
+    const d=fanPts.map((p,i)=>(i?'L':'M')+x(p.t)+' '+yPct(parseFloat(p.fan))).join(' ');
+    s+=`<path d="${d}" stroke="#999" stroke-width="1.8" stroke-dasharray="3 4" fill="none" opacity=".9"/>`;
+    fanPts.forEach(p=>s+=`<text x="${x(p.t)+4}" y="${yPct(parseFloat(p.fan))-4}" font-size="10" fill="#777">F${p.fan}</text>`);
   }
 
   rows.forEach(r=>{
     if(r.ev){
-      const xx=x(r.t);
-      const v=parseFloat(r.bt);
-      const yy=isNaN(v)?T+14:y(v);
+      const xx=x(r.t), bt=parseFloat(r.bt), yy=isNaN(bt)?T+14:yBT(bt);
       s+=`<line x1="${xx}" y1="${T}" x2="${xx}" y2="${H-B}" stroke="#b36b00"/>`;
       s+=`<circle cx="${xx}" cy="${yy}" r="6" fill="#b36b00"/>`;
       s+=`<text transform="translate(${xx+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)} ${fmt(r.t)}</text>`;
@@ -319,8 +269,7 @@ function drawGraph(){
 
   const p=phase();
   if(p){
-    const bandY=H-B+8, bandH=18;
-    const dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
+    const bandY=H-B+35, bandH=18, dryP=p.dry/p.total*100, maiP=p.mai/p.total*100, devP=p.dev/p.total*100;
     s+=`<rect x="${x(p.charge)}" y="${bandY}" width="${Math.max(0,x(p.gc)-x(p.charge))}" height="${bandH}" fill="#f2d6a2" opacity=".75"/>`;
     s+=`<rect x="${x(p.gc)}" y="${bandY}" width="${Math.max(0,x(p.fc)-x(p.gc))}" height="${bandH}" fill="#d4b48c" opacity=".75"/>`;
     s+=`<rect x="${x(p.fc)}" y="${bandY}" width="${Math.max(0,x(p.drop)-x(p.fc))}" height="${bandH}" fill="#c8886f" opacity=".75"/>`;
@@ -328,82 +277,46 @@ function drawGraph(){
     s+=`<text x="${x(p.gc)+4}" y="${bandY+13}" font-size="11" fill="#333">Mai ${maiP.toFixed(0)}%</text>`;
     s+=`<text x="${x(p.fc)+4}" y="${bandY+13}" font-size="11" fill="#333">Dev ${devP.toFixed(0)}%</text>`;
   }
-
+  s+=`<text x="${W-135}" y="${H-44}" font-size="11" fill="#444">Power: solid 0-100</text>`;
+  s+=`<text x="${W-135}" y="${H-30}" font-size="11" fill="#777">Fan: dashed 0-100</text>`;
   $('graph').innerHTML=s;
 }
 
-function profileData(){
-  return {
-    bean:$('bean').value,dose:$('dose').value,charge:$('charge').value,targetDrop:$('targetDrop').value,
-    pname:$('pname').value,rows:rows,baseSec:baseSec
-  };
+function renderLog(){
+  const sorted=rows.slice().sort((a,b)=>b.t-a.t);
+  $('log').innerHTML=sorted.map(r=>{
+    const rr=rorAtRow(r);
+    return `${fmt(r.t)}ãBT:${r.bt||'-'}ãRoR:${rr===''?'-':rr.toFixed(1)}ãP:${r.pw||'-'}ãF:${r.fan||'-'}ã${r.ev||''}`;
+  }).join('<br>');
 }
+
+function profileData(){return {bean:$('bean').value,dose:$('dose').value,charge:$('charge').value,pname:$('pname').value,rows:rows,baseSec:baseSec}}
 function profiles(){try{return JSON.parse(localStorage.getItem(PROFILE_KEY)||'{}')}catch(e){return{}}}
 function setProfiles(p){localStorage.setItem(PROFILE_KEY,JSON.stringify(p));refreshProfiles()}
-function saveProfile(){
-  const name=$('pname').value.trim() || new Date().toISOString().slice(0,16).replace('T',' ');
-  $('pname').value=name;
-  const p=profiles(); p[name]=profileData(); setProfiles(p);
-  showMsg('保存しました：'+name);
-}
+function saveProfile(){const name=$('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');$('pname').value=name;const p=profiles();p[name]=profileData();setProfiles(p);showMsg('ä¿å­ãã¾ããï¼'+name)}
 function loadProfile(){
   const name=$('profileList').value;if(!name)return;
   const p=profiles()[name];if(!p)return;
-  $('bean').value=p.bean||''; $('dose').value=p.dose||''; $('charge').value=p.charge||''; $('targetDrop').value=p.targetDrop||''; $('pname').value=p.pname||name;
-  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||'',manual:!!r.manual}));
-  sortRows(); baseSec=p.baseSec||0; running=false; clearInterval(timer);
-  updateAll(); showMsg('呼び出しました：'+name);
+  $('bean').value=p.bean||'';$('dose').value=p.dose||'';$('charge').value=p.charge||'';$('pname').value=p.pname||name;
+  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
+  sortRows();baseSec=p.baseSec||0;running=false;clearInterval(timer);updateAll();showMsg('å¼ã³åºãã¾ããï¼'+name);
 }
-function setReference(){
-  const name=$('profileList').value;if(!name)return;
-  reference=profiles()[name]; referenceName=name;
-  localStorage.setItem(REF_KEY,JSON.stringify({name,reference}));
-  updateRefStatus(); drawGraph(); showMsg('基準に設定：'+name);
-}
-function clearReference(){
-  reference=null;referenceName='';localStorage.removeItem(REF_KEY);updateRefStatus();drawGraph();
-}
-function loadReference(){
-  try{
-    const r=JSON.parse(localStorage.getItem(REF_KEY)||'null');
-    if(r){reference=r.reference;referenceName=r.name;}
-  }catch(e){}
-  updateRefStatus();
-}
-function updateRefStatus(){$('refStatus').innerText=reference?'基準プロファイル：'+referenceName:'基準プロファイル：なし'}
-function newRoastKeepRef(){
-  if(!confirm('新規焙煎を開始しますか？'))return;
-  running=false;baseSec=0;clearInterval(timer);initRows();updateAll();showMsg('新規焙煎を開始');
-}
-function deleteProfile(){
-  const name=$('profileList').value;if(!name)return;
-  if(!confirm(name+'を削除しますか？'))return;
-  const p=profiles();delete p[name];setProfiles(p);showMsg('削除しました：'+name);
-}
-function refreshProfiles(){
-  const p=profiles(); const names=Object.keys(p).sort().reverse();
-  $('profileList').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
-}
+function setReference(){const name=$('profileList').value;if(!name)return;reference=profiles()[name];referenceName=name;localStorage.setItem(REF_KEY,JSON.stringify({name,reference}));updateRefStatus();drawGraph();showMsg('åºæºã«è¨­å®ï¼'+name)}
+function clearReference(){reference=null;referenceName='';localStorage.removeItem(REF_KEY);updateRefStatus();drawGraph()}
+function loadReference(){try{const r=JSON.parse(localStorage.getItem(REF_KEY)||'null');if(r){reference=r.reference;referenceName=r.name}}catch(e){}updateRefStatus()}
+function updateRefStatus(){$('refStatus').innerText=reference?'åºæºãã­ãã¡ã¤ã«ï¼'+referenceName:'åºæºãã­ãã¡ã¤ã«ï¼ãªã'}
+function deleteProfile(){const name=$('profileList').value;if(!name)return;if(!confirm(name+'ãåé¤ãã¾ããï¼'))return;const p=profiles();delete p[name];setProfiles(p);showMsg('åé¤ãã¾ããï¼'+name)}
+function refreshProfiles(){const p=profiles();const names=Object.keys(p).sort().reverse();$('profileList').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
 function downloadCSV(){
-  let out='豆名,'+$('bean').value+'\n投入量,'+$('dose').value+'\n投入温度,'+$('charge').value+'\nプロファイル名,'+$('pname').value+'\n\n時刻,BT,RoR,火力,風量,イベント,メモ\n';
-  rows.forEach((r,i)=>{
-    const rr=rorFor(i);
-    out+=[fmt(r.t),r.bt,rr===''?'':rr.toFixed(1),r.pw,r.fan,r.ev,r.note].map(v=>String(v??'').includes(',')?`"${v}"`:v).join(',')+'\n';
+  let out='è±å,'+$('bean').value+'\\næå¥é,'+$('dose').value+'\\næå¥æ¸©åº¦,'+$('charge').value+'\\nãã­ãã¡ã¤ã«å,'+$('pname').value+'\\n\\næå»,BT,RoRã¹ã ã¼ãº,ç«å,é¢¨é,ã¤ãã³ã,ã¡ã¢\\n';
+  rows.sort((a,b)=>a.t-b.t).forEach(r=>{
+    const rr=rorAtRow(r);
+    out+=[fmt(r.t),r.bt,rr===''?'':rr.toFixed(1),r.pw,r.fan,r.ev,r.note].map(v=>{v=String(v??'');return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')+'\\n';
   });
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));
-  a.download=($('pname').value||'roast_log')+'.csv';
-  a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));a.download=($('pname').value||'roast_log')+'.csv';a.click();
 }
 
-function initRows(){
-  rows=[];
-  for(let t=0;t<=12*60;t+=30)ensureRow(t,true);
-}
-initRows();
-refreshProfiles();
-loadReference();
-updateAll();
+refreshProfiles();loadReference();updateAll();
 </script>
 </body>
 </html>
