@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RM500 Logger</title>
+<title>RM500 v22 No Table</title>
+
 <style>
 body{margin:0;background:#f5f5f5;font-family:Arial}
 .card{background:#fff;margin:10px;padding:12px;border-radius:10px}
 button{padding:10px;margin:3px;border-radius:6px;border:0;background:#222;color:#fff}
 input{padding:8px;margin:3px;width:80px}
 #time{font-size:42px;text-align:center}
-canvas{width:100%;height:430px;background:#fff;border:1px solid #ddd;border-radius:10px}
+svg{width:100%;height:420px;background:#fff;border:1px solid #ddd;border-radius:10px}
 </style>
 </head>
+
 <body>
 
 <div class="card">
@@ -25,9 +27,9 @@ canvas{width:100%;height:430px;background:#fff;border:1px solid #ddd;border-radi
 </div>
 
 <div class="card">
-BT <input id="bt" type="number">
-Power <input id="pw" type="number">
-Fan <input id="fan" type="number">
+BT <input id="bt">
+Power <input id="pw">
+Fan <input id="fan">
 <button onclick="save()">Save</button>
 </div>
 
@@ -39,27 +41,25 @@ Fan <input id="fan" type="number">
 <button onclick="eventSave('Drop')">Drop</button>
 </div>
 
-<canvas id="c" width="950" height="470"></canvas>
+<svg id="g" viewBox="0 0 760 420"></svg>
 
 <script>
-let data=[],run=false,startT=0,base=0;
-let events={};
-
-const btEl=document.getElementById("bt");
-const pwEl=document.getElementById("pw");
-const fanEl=document.getElementById("fan");
-const timeEl=document.getElementById("time");
+let rows=[],events={},run=false,startT=0,base=0;
 
 function now(){return run?base+Math.floor((Date.now()-startT)/1000):base}
-function fmt(s){let m=Math.floor(s/60),sec=s%60;return String(m).padStart(2,'0')+":"+String(sec).padStart(2,'0')}
+function fmt(s){
+let m=Math.floor(s/60),sec=s%60;
+return String(m).padStart(2,'0')+":"+String(sec).padStart(2,'0')
+}
 
 function start(){if(run)return;run=true;startT=Date.now();loop()}
 function pause(){base=now();run=false}
-function reset(){base=0;run=false;data=[];events={};timeEl.innerText="00:00";draw()}
-function shift(d){base=Math.max(0,now()+d);startT=Date.now();timeEl.innerText=fmt(now());draw()}
+function reset(){base=0;run=false;rows=[];events={};draw()}
+
+function shift(d){base=Math.max(0,now()+d);startT=Date.now()}
 
 function loop(){
-timeEl.innerText=fmt(now());
+time.innerText=fmt(now());
 draw();
 if(run)requestAnimationFrame(loop);
 }
@@ -70,20 +70,23 @@ let bt=parseFloat(btEl.value);
 let pw=parseFloat(pwEl.value);
 let fan=parseFloat(fanEl.value);
 if(isNaN(bt)&&isNaN(pw)&&isNaN(fan))return;
-data.push({t,bt,pw,fan});
-data.sort((a,b)=>a.t-b.t);
+rows.push({t,bt,pw,fan});
+rows.sort((a,b)=>a.t-b.t);
 btEl.value="";pwEl.value="";fanEl.value="";
-draw();
 }
 
 function eventSave(name){
 events[name]=now();
-draw();
 }
+
+const btEl=document.getElementById("bt");
+const pwEl=document.getElementById("pw");
+const fanEl=document.getElementById("fan");
+const time=document.getElementById("time");
 
 function ror(i){
 if(i<1)return null;
-let a=data[i],b=data[i-1];
+let a=rows[i],b=rows[i-1];
 if(isNaN(a.bt)||isNaN(b.bt))return null;
 let dt=(a.t-b.t)/60;
 if(dt<=0)return null;
@@ -93,7 +96,7 @@ return (a.bt-b.bt)/dt;
 function smooth(i){
 let vals=[];
 for(let j=i-1;j<=i+1;j++){
-if(j>=0&&j<data.length){
+if(j>=0&&j<rows.length){
 let r=ror(j);
 if(r!==null)vals.push(r);
 }}
@@ -102,174 +105,55 @@ return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
 
 function draw(){
-let c=document.getElementById("c");
-let ctx=c.getContext("2d");
-ctx.clearRect(0,0,c.width,c.height);
-
-let L=80,R=75,T=25,B=65;
-let W=c.width-L-R;
-let H=c.height-T-B;
+let svg=document.getElementById("g");
 
 let maxT=14*60;
 let maxTemp=230;
-let maxRor=30;
 
-let x=t=>L+(t/maxT)*W;
-let yBT=v=>T+H-(v/maxTemp)*H;
-let yROR=v=>T+H-(Math.min(maxRor,Math.max(0,v))/maxRor)*H;
+let x=t=>t/maxT*760;
+let y=v=>420-(v/maxTemp*420);
 
-// background
-ctx.fillStyle="#fff";
-ctx.fillRect(0,0,c.width,c.height);
+let html='';
 
-// phase bands
-if(events.Charge!==undefined && events.GC!==undefined){
-ctx.fillStyle="rgba(242,214,162,0.55)";
-ctx.fillRect(x(events.Charge),T,x(events.GC)-x(events.Charge),H);
-}
-if(events.GC!==undefined && events.FC!==undefined){
-ctx.fillStyle="rgba(212,180,140,0.55)";
-ctx.fillRect(x(events.GC),T,x(events.FC)-x(events.GC),H);
-}
-if(events.FC!==undefined && events.Drop!==undefined){
-ctx.fillStyle="rgba(200,136,111,0.55)";
-ctx.fillRect(x(events.FC),T,x(events.Drop)-x(events.FC),H);
-}
 
-// grid and labels
-ctx.font="16px Arial";
-ctx.textBaseline="middle";
-ctx.lineWidth=1;
-
-// temp grid 5C, label every 10C
-for(let temp=0;temp<=230;temp+=5){
-let yy=yBT(temp);
-ctx.strokeStyle=temp%10===0 ? "#ddd" : "#eee";
-ctx.beginPath();
-ctx.moveTo(L,yy);
-ctx.lineTo(L+W,yy);
-ctx.stroke();
-
-if(temp%10===0){
-ctx.fillStyle="#000";
-ctx.fillText(temp+"C",8,yy);
-}
-}
-
-// time grid 1min
-for(let m=0;m<=14;m++){
-let xx=x(m*60);
-ctx.strokeStyle="#e5e5e5";
-ctx.beginPath();
-ctx.moveTo(xx,T);
-ctx.lineTo(xx,T+H);
-ctx.stroke();
-
-ctx.fillStyle="#000";
-ctx.fillText(m+"m",xx-12,T+H+28);
-}
-
-// RoR right axis 0-30
-ctx.fillStyle="#000";
-for(let r=0;r<=30;r+=5){
-let yy=yROR(r);
-ctx.fillText(r, L+W+18, yy);
-}
-
-// axes
-ctx.strokeStyle="#999";
-ctx.lineWidth=1.5;
-ctx.beginPath();
-ctx.moveTo(L,T);
-ctx.lineTo(L,T+H);
-ctx.lineTo(L+W,T+H);
-ctx.lineTo(L+W,T);
-ctx.stroke();
-
-ctx.fillStyle="#000";
-ctx.font="16px Arial";
-ctx.fillText("BT C",L+5,T+14);
-ctx.fillText("RoR",L+W+18,T+14);
-
-// BT line
-if(data.length){
-ctx.strokeStyle="#000";
-ctx.lineWidth=3;
-ctx.beginPath();
-let started=false;
-data.forEach((d)=>{
-if(isNaN(d.bt))return;
-if(!started){ctx.moveTo(x(d.t),yBT(d.bt));started=true;}
-else ctx.lineTo(x(d.t),yBT(d.bt));
+// ===== BT LINE =====
+let btPts=rows.filter(r=>!isNaN(r.bt));
+if(btPts.length){
+let d='';
+btPts.forEach((p,i)=>{
+d+=(i?'L':'M')+x(p.t)+' '+y(p.bt)+' ';
 });
-ctx.stroke();
+html+=`<path d="${d}" stroke="#000" fill="none" stroke-width="3"/>`;
 
-// BT points and labels
-ctx.fillStyle="#000";
-ctx.font="16px Arial";
-data.forEach(d=>{
-if(!isNaN(d.bt)){
-let xx=x(d.t), yy=yBT(d.bt);
-ctx.beginPath();
-ctx.arc(xx,yy,4,0,Math.PI*2);
-ctx.fill();
-ctx.fillText(Math.round(d.bt)+"C",xx+6,yy-10);
-}
+btPts.forEach(p=>{
+html+=`<circle cx="${x(p.t)}" cy="${y(p.bt)}" r="4" fill="#000"/>`;
+html+=`<text x="${x(p.t)+5}" y="${y(p.bt)-5}" font-size="12">${Math.round(p.bt)}</text>`;
 });
 }
 
-// RoR line
-ctx.strokeStyle="#777";
-ctx.lineWidth=2;
-ctx.setLineDash([6,5]);
-ctx.beginPath();
-let rStarted=false;
-data.forEach((d,i)=>{
-let r=smooth(i);
-if(r===null)return;
-if(!rStarted){ctx.moveTo(x(d.t),yROR(r));rStarted=true;}
-else ctx.lineTo(x(d.t),yROR(r));
+// ===== ROR =====
+let rorPts=[];
+rows.forEach((r,i)=>{
+let val=smooth(i);
+if(val!==null)rorPts.push([r.t,val]);
 });
-ctx.stroke();
-ctx.setLineDash([]);
+if(rorPts.length){
+let d='';
+rorPts.forEach((p,i)=>{
+d+=(i?'L':'M')+x(p[0])+' '+y(p[1]*5)+' ';
+});
+html+=`<path d="${d}" stroke="#777" stroke-dasharray="5 5" fill="none"/>`;
+}
 
-// events
+// ===== EVENTS =====
 Object.keys(events).forEach(name=>{
 let t=events[name];
 let xx=x(t);
-
-ctx.strokeStyle="#b36b00";
-ctx.lineWidth=2;
-ctx.beginPath();
-ctx.moveTo(xx,T);
-ctx.lineTo(xx,T+H);
-ctx.stroke();
-
-ctx.fillStyle="#b36b00";
-ctx.beginPath();
-ctx.arc(xx,T+16,6,0,Math.PI*2);
-ctx.fill();
-
-ctx.save();
-ctx.translate(xx+8,T+30);
-ctx.rotate(Math.PI/2);
-ctx.font="15px Arial";
-ctx.fillText(name+" "+fmt(t),0,0);
-ctx.restore();
+html+=`<line x1="${xx}" y1="0" x2="${xx}" y2="420" stroke="#b36b00"/>`;
+html+=`<text transform="translate(${xx+4},20) rotate(90)" font-size="12">${name}</text>`;
 });
 
-// phase labels
-ctx.fillStyle="#333";
-ctx.font="16px Arial";
-if(events.Charge!==undefined && events.GC!==undefined){
-ctx.fillText("Dry",x(events.Charge)+8,T+18);
-}
-if(events.GC!==undefined && events.FC!==undefined){
-ctx.fillText("Maillard",x(events.GC)+8,T+18);
-}
-if(events.FC!==undefined && events.Drop!==undefined){
-ctx.fillText("Development",x(events.FC)+8,T+18);
-}
+svg.innerHTML=html;
 }
 draw();
 </script>
