@@ -18,6 +18,7 @@ svg{width:100%;height:320px;background:#fff;border:1px solid #ddd;border-radius:
 table{width:100%;border-collapse:collapse;background:#fff;min-width:880px}
 th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}
 td input{width:58px;padding:6px}.wrap{overflow:auto}
+.rorCell{font-weight:700;color:#333}
 .small{font-size:12px;color:#666;line-height:1.5}.row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .pill{display:inline-block;background:#eee;border-radius:999px;padding:4px 8px;font-size:12px;margin:2px}
 .metric{display:inline-block;min-width:125px;background:#f3f3f3;border-radius:10px;padding:8px;margin:4px;font-size:13px}
@@ -28,7 +29,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 <body>
 <header>
 <h1>RM500 ローストロガー Pro</h1>
-<div class="sub">基準プロファイル重ね表示 / RoR / フェーズ比率 / DTR / RM500手入力ログ</div>
+<div class="sub">基準プロファイル重ね表示 / RoR自動計算 / フェーズ比率 / DTR / RM500手入力ログ</div>
 </header>
 
 <div class="card">
@@ -50,10 +51,10 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 
 <div class="card">
   BT豆温 <input id="bt" type="number" step=".1">
-  RoR上昇率 <input id="rr" type="number" step=".1" placeholder="自動">
   火力 <input id="pw" type="number">
   風量 <input id="fan" type="number">
   <button onclick="saveNow()">現在分に記録</button>
+  <div class="small">RoRはBT差から自動計算します。例：6分149℃、5分130℃ならRoR +19.0。</div>
 </div>
 
 <div class="card">
@@ -102,15 +103,15 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 
 <div class="card wrap">
 <table>
-<thead><tr><th>分</th><th>BT</th><th>RoR</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
+<thead><tr><th>分</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
 <tbody id="tb"></tbody>
 </table>
 </div>
 
 <script>
 let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
-const KEY='rm500_pro_profiles_jp_v1';
-const REFKEY='rm500_pro_reference_jp_v1';
+const KEY='rm500_pro_profiles_jp_v2';
+const REFKEY='rm500_pro_reference_jp_v2';
 
 function q(x){return document.getElementById(x)}
 function pad(n){return String(n).padStart(2,'0')}
@@ -118,7 +119,7 @@ function fmt(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60)}
 function sec(){return run?base+Math.floor((Date.now()-t0)/1000):base}
 function min(){return Math.floor(sec()/60)}
 function msg(x){q('msg').innerText=x}
-function ensure(n){while(rows.length<=n)rows.push({bt:'',ror:'',pw:'',fan:'',ev:'',note:''})}
+function ensure(n){while(rows.length<=n)rows.push({bt:'',pw:'',fan:'',ev:'',note:''})}
 
 function tick(){q('time').innerText=fmt(sec());ensure(min());draw();render();analysis()}
 function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(tick,300);tick();msg('タイマー開始')}
@@ -129,11 +130,15 @@ function addm(){base=(min()+1)*60;tick();msg('+1分しました')}
 function saveNow(){
   let i=min();ensure(i);
   rows[i].bt=q('bt').value;
-  rows[i].ror=q('rr').value;
   rows[i].pw=q('pw').value;
   rows[i].fan=q('fan').value;
-  tick();msg(i+'分に記録しました');
+  q('bt').value='';
+  q('pw').value='';
+  q('fan').value='';
+  tick();
+  msg(i+'分に記録しました。入力欄を空にしました。');
 }
+
 function ev(x){
   let i=min();ensure(i);
   rows[i].ev=rows[i].ev?rows[i].ev+'/'+x:x;
@@ -149,10 +154,7 @@ function autoRorAt(arr,i){
   }
   return'';
 }
-function getRorFrom(arr,i){
-  let m=parseFloat(arr[i]?.ror);
-  return isNaN(m)?autoRorAt(arr,i):m;
-}
+function getRorFrom(arr,i){return autoRorAt(arr,i)}
 function getRor(i){return getRorFrom(rows,i)}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
@@ -160,9 +162,10 @@ function render(){
   let h='';
   for(let i=0;i<rows.length;i++){
     let r=rows[i],rr=getRor(i);
+    let rrText=rr===''?'-':(rr>0?'+':'')+rr.toFixed(1);
     h+=`<tr><td>${i}</td>
-    <td><input type=number step=.1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis()"></td>
-    <td><input type=number step=.1 placeholder="${rr===''?'自動':rr.toFixed(1)}" value="${esc(r.ror)}" oninput="rows[${i}].ror=this.value;draw();analysis()"></td>
+    <td><input type=number step=.1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis();renderSoon()"></td>
+    <td class="rorCell">${rrText}</td>
     <td><input type=number value="${esc(r.pw)}" oninput="rows[${i}].pw=this.value"></td>
     <td><input type=number value="${esc(r.fan)}" oninput="rows[${i}].fan=this.value"></td>
     <td><input style="width:100px" value="${esc(r.ev)}" oninput="rows[${i}].ev=this.value;draw();analysis()"></td>
@@ -170,18 +173,16 @@ function render(){
   }
   q('tb').innerHTML=h;
 }
+let renderTimer=null;
+function renderSoon(){clearTimeout(renderTimer);renderTimer=setTimeout(()=>{render();draw();analysis()},250)}
 
 function eventMin(name, arr=rows){
-  for(let i=0;i<arr.length;i++){
-    if((arr[i].ev||'').includes(name))return i;
-  }
+  for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return i}
   return null;
 }
 function eventTemp(name, arr=rows){
-  let i=eventMin(name,arr);
-  if(i===null)return null;
-  let v=parseFloat(arr[i].bt);
-  return isNaN(v)?null:v;
+  let i=eventMin(name,arr);if(i===null)return null;
+  let v=parseFloat(arr[i].bt);return isNaN(v)?null:v;
 }
 
 function analysis(){
@@ -190,7 +191,6 @@ function analysis(){
  q('totalM').innerText=drop!==null?drop+'分':'-';
  q('dropM').innerText=dropT!==null?dropT.toFixed(1)+'℃':'-';
  if(charge===null) charge=0;
-
  if(gc!==null && fc!==null && drop!==null && drop>0){
    let dry=gc-charge, mai=fc-gc, dev=drop-fc;
    let dryP=dry/drop*100, maiP=mai/drop*100, devP=dev/drop*100;
@@ -198,7 +198,6 @@ function analysis(){
    q('maiM').innerText=mai+'分 / '+maiP.toFixed(0)+'%';
    q('devM').innerText=dev+'分 / '+devP.toFixed(0)+'%';
    q('dtrM').innerText=devP.toFixed(1)+'%';
-
    let note=[];
    if(devP<10)note.push('DTR低め');
    if(devP>20)note.push('DTR高め');
@@ -214,7 +213,6 @@ function analysis(){
 function draw(){
  let W=760,H=320,L=45,R=15,T=18,B=34,gw=W-L-R,gh=H-T-B;
  let pts=[],rpts=[],refPts=[],refRpts=[];
-
  for(let i=0;i<rows.length;i++){
    let v=parseFloat(rows[i].bt); if(!isNaN(v))pts.push([i,v]);
    let rv=getRor(i); if(rv!=='')rpts.push([i,rv]);
@@ -225,7 +223,6 @@ function draw(){
      let rv=getRorFrom(reference.rows,i); if(rv!=='')refRpts.push([i,rv]);
    }
  }
-
  let maxM=Math.max(10,rows.length-1,refPts.length?refPts[refPts.length-1][0]:0),minT=80,maxT=220;
  let all=pts.concat(refPts);
  if(all.length){
@@ -235,16 +232,13 @@ function draw(){
  let x=i=>L+gw*i/maxM;
  let y=v=>T+gh*(1-(v-minT)/(maxT-minT));
  let yr=v=>T+gh*(1-v/30);
-
  let s=`<rect width="${W}" height="${H}" fill="white"/><path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
  for(let k=0;k<=5;k++){
    let yy=T+gh*k/5,tt=Math.round(maxT-(maxT-minT)*k/5);
    s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eee"/><text x="5" y="${yy+4}" font-size="12" fill="#666">${tt}</text>`;
  }
  for(let i=0;i<=maxM;i+=2)s+=`<text x="${x(i)-6}" y="${H-12}" font-size="12" fill="#666">${i}</text>`;
-
  s+=`<path d="M${x(1)} ${yr(12)} L${x(6)} ${yr(12)} L${x(9)} ${yr(11)} L${x(maxM)} ${yr(10)}" stroke="#ddd" stroke-width="2" stroke-dasharray="3 5" fill="none"/><text x="${W-150}" y="34" font-size="12" fill="#aaa">Target RoR 12/11/10</text>`;
-
  if(refPts.length){
    let d=refPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');
    s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`;
@@ -270,7 +264,6 @@ function draw(){
  rows.forEach((r,i)=>{
    if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#b36b00"/><text transform="translate(${x(i)+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)}</text>`;
  });
-
  q('g').innerHTML=s;
 }
 
@@ -283,14 +276,11 @@ function csv(){
  let a=document.createElement('a');
  a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));
  a.download=(q('pname').value||'roast_log')+'.csv';
- a.click();
- msg('CSVを保存しました');
+ a.click();msg('CSVを保存しました');
 }
 function c(v){v=String(v??'');return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 
-function profiles(){
- try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}
-}
+function profiles(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
 function setP(p){localStorage.setItem(KEY,JSON.stringify(p));refP()}
 function saveP(){
  let name=q('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');
@@ -303,7 +293,7 @@ function loadP(){
  let name=q('plist').value;if(!name)return;
  let p=profiles()[name];
  q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;
- rows=(p.rows||[]).map(r=>({bt:r.bt||'',ror:r.ror||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
+ rows=(p.rows||[]).map(r=>({bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
  base=p.base||0;run=0;clearInterval(timer);ensure(12);tick();msg('現在プロファイルとして呼び出しました：'+name);
 }
 function setReference(){
@@ -328,7 +318,7 @@ function clearReference(){
 function newWithReference(){
  if(!confirm('基準プロファイルを残したまま新規焙煎を開始しますか？'))return;
  run=0;base=0;clearInterval(timer);rows=[];
- ['bean','dose','charge','targetDrop','pname','bt','rr','pw','fan'].forEach(id=>q(id).value='');
+ ['bean','dose','charge','targetDrop','pname','bt','pw','fan'].forEach(id=>q(id).value='');
  ensure(12);tick();msg('基準を残して新規焙煎を開始しました');
 }
 function delP(){
@@ -347,4 +337,17 @@ ensure(12);refP();loadSavedReference();tick();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
