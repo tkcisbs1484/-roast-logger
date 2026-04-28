@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roast Logger</title>
+<style>
+body{font-family:sans-serif;padding:20px}
+button{font-size:16px;padding:10px;margin:5px}
+#time{font-size:40px;margin:10px}
+</style>
+</head>
+
+<body>
+
+<h2>ローストロガー</h2>
+
+<div id="time">0 min</div>
+
+<button onclick="start()">スタート</button>
+<button onclick="add()">+1分</button>
+
+<br><br>
+
+<input id="bt" placeholder="BT">
+<button onclick="save()">記録</button>
+
+<ul id="log"></ul>
+
+<script>
+let m=0
+let timer
+
+function start(){
+clearInterval(timer)
+timer=setInterval(()=>{
+m++
+update()
+},60000)
+}
+
+function add(){
+m++
+update()
+}
+
+function update(){
+document.getElementById("time").innerText=m+" min"
+}
+
+function save(){
+let bt=document.getElementById("bt").value
+let li=document.createElement("li")
+li.innerText=m+" min : "+bt+"℃"
+document.getElementById("log").appendChild(li)
+}
+</script>
+
+</body>
+</html>
