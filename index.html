@@ -32,6 +32,16 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 <div class="sub">基準プロファイル重ね表示 / RoR自動計算 / フェーズ比率 / DTR / RM500手入力ログ</div>
 </header>
 
+<!-- 1. Bean / Dose / Charge -->
+<div class="card">
+  豆名 <input id="bean" class="wide" placeholder="例 Ethiopia">
+  投入量 <input id="dose" type="number" placeholder="g">
+  投入温度 <input id="charge" type="number" placeholder="℃">
+  <br>プロファイル名 <input id="pname" class="wide" placeholder="例 2026-04-28 Ethiopia">
+  目標排出温度 <input id="targetDrop" type="number" placeholder="196">
+</div>
+
+<!-- 2. Timer -->
 <div class="card">
   <div id="time">00:00</div>
   <button onclick="st()">スタート</button>
@@ -41,14 +51,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div id="msg" class="small">準備OK</div>
 </div>
 
-<div class="card">
-  豆名 <input id="bean" class="wide" placeholder="例 Ethiopia">
-  投入量 <input id="dose" type="number" placeholder="g">
-  投入温度 <input id="charge" type="number" placeholder="℃">
-  <br>プロファイル名 <input id="pname" class="wide" placeholder="例 2026-04-28 Ethiopia">
-  目標排出温度 <input id="targetDrop" type="number" placeholder="196">
-</div>
-
+<!-- 3. BT input -->
 <div class="card">
   BT豆温 <input id="bt" type="number" step=".1">
   火力 <input id="pw" type="number">
@@ -57,6 +60,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div class="small">RoRはBT差から自動計算します。例：6分149℃、5分130℃ならRoR +19.0。</div>
 </div>
 
+<!-- 4. Events -->
 <div class="card">
   <button class="e" onclick="ev('投入')">投入</button>
   <button class="e" onclick="ev('ボトム')">ボトム</button>
@@ -66,6 +70,30 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <button onclick="csv()">CSV保存</button>
 </div>
 
+<!-- 5. Graph -->
+<div class="card">
+  <span class="pill">黒線：今回BT</span>
+  <span class="pill">黒点線：今回RoR</span>
+  <span class="pill">青灰線：基準BT</span>
+  <span class="pill">薄点線：基準RoR</span>
+  <span class="pill">オレンジ線：今回イベント</span>
+  <span class="pill">目標RoR：12/11/10</span>
+  <svg id="g" viewBox="0 0 760 320"></svg>
+</div>
+
+<!-- 6. Analysis -->
+<div class="card">
+  <b>RM500 分析</b><br>
+  <span class="metric">Drying<br><small>投入→GC</small><br><b id="dryM">-</b></span>
+  <span class="metric">Maillard<br><small>GC→1ハゼ</small><br><b id="maiM">-</b></span>
+  <span class="metric">Development<br><small>1ハゼ→排出</small><br><b id="devM">-</b></span>
+  <span class="metric">DTR<br><small>デベロップメント比率</small><br><b id="dtrM">-</b></span>
+  <span class="metric">Total Time<br><small>総焙煎時間</small><br><b id="totalM">-</b></span>
+  <span class="metric">Drop Temp<br><small>排出温度</small><br><b id="dropM">-</b></span>
+  <div class="small" id="analysisNote">フェーズ計算には「投入 / GC / 1ハゼ / 排出」のイベント記録が必要です。</div>
+</div>
+
+<!-- 7. Profile save/reference -->
 <div class="card">
   <div class="row">
     <button class="g" onclick="saveP()">プロファイル保存</button>
@@ -80,27 +108,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div class="small">先に「基準に設定」→「基準を残して新規焙煎」。前回プロファイルを背景に表示したまま、今回の焙煎をリアルタイムで重ねられます。</div>
 </div>
 
-<div class="card">
-  <b>RM500 分析</b><br>
-  <span class="metric">Drying<br><small>投入→GC</small><br><b id="dryM">-</b></span>
-  <span class="metric">Maillard<br><small>GC→1ハゼ</small><br><b id="maiM">-</b></span>
-  <span class="metric">Development<br><small>1ハゼ→排出</small><br><b id="devM">-</b></span>
-  <span class="metric">DTR<br><small>デベロップメント比率</small><br><b id="dtrM">-</b></span>
-  <span class="metric">Total Time<br><small>総焙煎時間</small><br><b id="totalM">-</b></span>
-  <span class="metric">Drop Temp<br><small>排出温度</small><br><b id="dropM">-</b></span>
-  <div class="small" id="analysisNote">フェーズ計算には「投入 / GC / 1ハゼ / 排出」のイベント記録が必要です。</div>
-</div>
-
-<div class="card">
-  <span class="pill">黒線：今回BT</span>
-  <span class="pill">黒点線：今回RoR</span>
-  <span class="pill">青灰線：基準BT</span>
-  <span class="pill">薄点線：基準RoR</span>
-  <span class="pill">オレンジ線：今回イベント</span>
-  <span class="pill">目標RoR：12/11/10</span>
-  <svg id="g" viewBox="0 0 760 320"></svg>
-</div>
-
+<!-- 8. Manual table -->
 <div class="card wrap">
 <table>
 <thead><tr><th>分</th><th>BT</th><th>RoR自動</th><th>火力</th><th>風量</th><th>イベント</th><th>メモ</th></tr></thead>
@@ -110,8 +118,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 
 <script>
 let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
-const KEY='rm500_pro_profiles_jp_v2';
-const REFKEY='rm500_pro_reference_jp_v2';
+const KEY='rm500_pro_profiles_jp_v3';
+const REFKEY='rm500_pro_reference_jp_v3';
 
 function q(x){return document.getElementById(x)}
 function pad(n){return String(n).padStart(2,'0')}
@@ -337,8 +345,6 @@ ensure(12);refP();loadSavedReference();tick();
 </script>
 </body>
 </html>
-
-
 
 
 
