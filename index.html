@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v12</title>
+<title>RM500 ローストロガー Pro v13</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v12</h1>
-<div class="sub">軽量版 / BT 1刻み / ±1・5・10秒切替 / 長押し・スワイプ調整</div>
+<h1>RM500 ローストロガー Pro v13</h1>
+<div class="sub">軽量版 / 時間調整安定版 / ±1・5・10秒 / 長押し・スワイプ対応</div>
 </header>
 
 <div class="card">
@@ -144,6 +144,7 @@ function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setIn
 function pa(){base=sec();run=0;clearInterval(timer);fullUpdate();msg('一時停止')}
 function rsT(){base=0;run=0;clearInterval(timer);fullUpdate();msg('タイマーをリセットしました')}
 let timeStep = 10;
+let anchorTime = null;
 
 function setStep(n){
   timeStep = n;
@@ -151,9 +152,20 @@ function setStep(n){
   msg('時間調整を±' + n + '秒にしました');
 }
 
+function beginAdjust(){
+  if(anchorTime === null){
+    anchorTime = Math.floor(sec());
+  }
+}
+
+function resetAnchor(){
+  anchorTime = null;
+}
+
 function adjustTime(delta){
-  let current = Math.floor(sec());
-  base = Math.max(0, current + delta);
+  beginAdjust();
+  anchorTime = Math.max(0, anchorTime + delta);
+  base = anchorTime;
   t0 = Date.now();
   fullUpdate();
   msg((delta>0?'+':'') + delta + '秒しました');
@@ -424,12 +436,13 @@ function setupHoldButton(id, action){
 
   function startHold(e){
     e.preventDefault();
+    resetAnchor();
     action();
     clearTimeout(holdTimer);
     clearInterval(repeatTimer);
     holdTimer = setTimeout(()=>{
-      repeatTimer = setInterval(action, 160);
-    }, 350);
+      repeatTimer = setInterval(action, 180);
+    }, 420);
   }
 
   function stopHold(){
@@ -437,6 +450,7 @@ function setupHoldButton(id, action){
     clearInterval(repeatTimer);
     holdTimer = null;
     repeatTimer = null;
+    resetAnchor();
   }
 
   btn.addEventListener('mousedown', startHold);
@@ -462,6 +476,7 @@ function setupSwipeTime(){
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     used = false;
+    resetAnchor();
   }, {passive:true});
 
   el.addEventListener('touchmove', e=>{
@@ -474,10 +489,14 @@ function setupSwipeTime(){
     }
   }, {passive:true});
 
+  el.addEventListener('touchend', ()=>resetAnchor());
+  el.addEventListener('touchcancel', ()=>resetAnchor());
+
   el.addEventListener('mousedown', e=>{
     startX = e.clientX;
     startY = e.clientY;
     used = false;
+    resetAnchor();
   });
 
   el.addEventListener('mouseup', e=>{
@@ -486,6 +505,7 @@ function setupSwipeTime(){
     if(Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5){
       adjustTime(dx > 0 ? timeStep : -timeStep);
     }
+    resetAnchor();
   });
 }
 
@@ -504,3 +524,4 @@ setupSwipeTime();
 </script>
 </body>
 </html>
+
