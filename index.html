@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー v21</title>
+<title>RM500 ローストロガー v22</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー v21</h1>
-<div class="sub">30秒ごと入力 / RoR安定計算 / イベント最寄り30秒枠 / 軽量版</div>
+<h1>RM500 ローストロガー v22</h1>
+<div class="sub">30秒表示欄 / BTは実時刻でグラフ反映 / RoR時刻順安定計算 / 軽量版</div>
 </header>
 
 <div class="card">
@@ -55,7 +55,7 @@ td input{width:58px;padding:6px}.wrap{overflow:auto;max-height:520px}
   火力 <input id="pw" type="number" step="5">
   風量 <input id="fan" type="number" step="5">
   <button onclick="saveNow()">現在時刻に記録</button>
-  <div class="small">現在時刻に一番近い30秒枠へ記録します。例 8:37 → 8:30、8:46 → 9:00。</div>
+  <div class="small">BTは現在の分:秒で記録し、グラフにもその時刻で反映します。表は入力しやすいように30秒ごと＋実時刻行を表示します。</div>
 </div>
 
 <div class="card">
@@ -126,17 +126,23 @@ function nearest30(s){return Math.round(Math.floor(s)/30)*30}
 function showMsg(t){$('msg').innerText=t}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
-function makeRow(t){return {t:t,bt:'',pw:'',fan:'',ev:'',note:''}}
+function makeRow(t,manual=false){return {t:t,bt:'',pw:'',fan:'',ev:'',note:'',manual:manual}}
 function sortRows(){rows.sort((a,b)=>a.t-b.t)}
-function ensureRow(t){
+function ensureRow(t, manual=false){
   t=Math.max(0,Math.floor(t));
   let r=rows.find(x=>x.t===t);
-  if(!r){r=makeRow(t); rows.push(r); sortRows();}
+  if(!r){
+    r=makeRow(t, manual);
+    rows.push(r);
+    sortRows();
+  }else if(manual){
+    r.manual=true;
+  }
   return r;
 }
 function initRows(){
   rows=[];
-  for(let t=0;t<=12*60;t+=30)ensureRow(t);
+  for(let t=0;t<=12*60;t+=30)ensureRow(t,true);
 }
 function updateAll(){ $('time').innerText=fmt(nowSec()); renderTable(); updateAnalysis(); drawGraph(); }
 function updateLight(){ $('time').innerText=fmt(nowSec()); drawGraph(); }
@@ -147,15 +153,14 @@ function resetTimer(){ baseSec=0; running=false; clearInterval(timer); updateAll
 function adjustTime(delta){ baseSec=Math.max(0, nowSec()+delta); startedAt=Date.now(); updateAll(); showMsg((delta>0?'+':'')+delta+'秒'); }
 
 function saveNow(){
-  const raw=nowSec();
-  const t=nearest30(raw);
-  const r=ensureRow(t);
+  const t=Math.floor(nowSec());
+  const r=ensureRow(t,false);
   r.bt=$('bt').value;
   r.pw=$('pw').value;
   r.fan=$('fan').value;
   $('bt').value=''; $('pw').value=''; $('fan').value='';
   updateAll();
-  showMsg(fmt(raw)+' → '+fmt(t)+' に記録');
+  showMsg(fmt(t)+' にBT/火力/風量を記録しました');
 }
 function saveEvent(name){
   const raw=nowSec();
@@ -172,17 +177,23 @@ function saveEvent(name){
 }
 
 function rorFor(index, arr=rows){
-  const sorted=arr.slice().sort((a,b)=>a.t-b.t);
   const target=arr[index];
-  const i=sorted.findIndex(x=>x===target || x.t===target.t);
-  if(i<0)return '';
-  const a=parseFloat(sorted[i].bt);
-  if(isNaN(a))return '';
+  if(!target)return '';
+  const currentBT=parseFloat(target.bt);
+  if(isNaN(currentBT))return '';
+
+  const sorted=arr
+    .filter(r=>!isNaN(parseFloat(r.bt)))
+    .sort((a,b)=>a.t-b.t);
+
+  const i=sorted.findIndex(r=>r===target || r.t===target.t);
+  if(i<=0)return '';
+
   for(let j=i-1;j>=0;j--){
-    const b=parseFloat(sorted[j].bt);
-    if(!isNaN(b)){
-      const dt=(sorted[i].t-sorted[j].t)/60;
-      if(dt>0)return (a-b)/dt;
+    const prevBT=parseFloat(sorted[j].bt);
+    const dt=(sorted[i].t-sorted[j].t)/60;
+    if(!isNaN(prevBT) && dt>0){
+      return (currentBT-prevBT)/dt;
     }
   }
   return '';
@@ -339,7 +350,7 @@ function loadProfile(){
   const name=$('profileList').value;if(!name)return;
   const p=profiles()[name];if(!p)return;
   $('bean').value=p.bean||''; $('dose').value=p.dose||''; $('charge').value=p.charge||''; $('targetDrop').value=p.targetDrop||''; $('pname').value=p.pname||name;
-  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));
+  rows=(p.rows||[]).map(r=>({t:r.t,bt:r.bt||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||'',manual:!!r.manual}));
   sortRows(); baseSec=p.baseSec||0; running=false; clearInterval(timer);
   updateAll(); showMsg('呼び出しました：'+name);
 }
@@ -387,7 +398,7 @@ function downloadCSV(){
 
 function initRows(){
   rows=[];
-  for(let t=0;t<=12*60;t+=30)ensureRow(t);
+  for(let t=0;t<=12*60;t+=30)ensureRow(t,true);
 }
 initRows();
 refreshProfiles();
