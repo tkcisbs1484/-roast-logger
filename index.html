@@ -1,61 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RM500 Roast Logger</title>
 <style>
-body{font-family:sans-serif;padding:20px;background:#f5f5f5}
-h2{margin-bottom:10px}
-#time{font-size:40px;margin:10px 0}
-button{font-size:16px;padding:10px;margin:5px;border:none;border-radius:8px;background:#333;color:#fff}
-input{padding:8px;font-size:16px}
+body{margin:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
+header{background:#222;color:#fff;padding:16px}h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.8}
+.card{background:#fff;margin:10px;padding:12px;border-radius:14px;border:1px solid #ddd}
+button{font-size:16px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff}
+button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a}button.r{background:#9b1c1c}
+input,select{font-size:16px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px}
+input{width:74px}.wide{width:180px}#time{font-size:48px;font-weight:800;text-align:center;margin:8px}
+svg{width:100%;height:280px;background:white;border:1px solid #ddd;border-radius:10px}
+table{width:100%;border-collapse:collapse;background:white;min-width:760px}
+th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}td input{width:58px;padding:6px}
+.wrap{overflow:auto}.small{font-size:12px;color:#666;line-height:1.5}.pill{display:inline-block;background:#eee;border-radius:999px;padding:4px 8px;font-size:12px;margin:2px}.row{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 </style>
 </head>
 <body>
+<header><h1>RM500 Roast Logger</h1><div class="sub">ã°ã©ã / RoRèªåè¨ç® / ãã­ãã¡ã¤ã«ä¿å­ / RM500æå¥å</div></header>
 
-<h2>ローストロガー</h2>
+<div class="card">
+  <div id="time">00:00</div>
+  <button onclick="st()">ã¹ã¿ã¼ã</button>
+  <button class="b" onclick="pa()">ä¸æåæ­¢</button>
+  <button class="b" onclick="rsT()">ã¿ã¤ãã¼ãªã»ãã</button>
+  <button onclick="addm()">+1å</button>
+  <div id="msg" class="small">æºåOK</div>
+</div>
 
-<div id="time">0 min</div>
+<div class="card">
+  è±å <input id="bean" class="wide" placeholder="Ethiopia">
+  æå¥é <input id="dose" type="number" placeholder="g">
+  æå¥æ¸©åº¦ <input id="charge" type="number" placeholder="â">
+  <br>ãã­ãã¡ã¤ã«å <input id="pname" class="wide" placeholder="2026-04-28 roast">
+</div>
 
-<button onclick="start()">スタート</button>
-<button onclick="add()">+1分</button>
+<div class="card">
+  BT <input id="bt" type="number" step=".1">
+  RoR <input id="rr" type="number" step=".1" placeholder="èªå">
+  ç«å <input id="pw" type="number">
+  é¢¨é <input id="fan" type="number">
+  <button onclick="saveNow()">ç¾å¨åã«è¨é²</button>
+</div>
 
-<br><br>
+<div class="card">
+  <button class="e" onclick="ev('æå¥')">æå¥</button>
+  <button class="e" onclick="ev('ããã ')">ããã </button>
+  <button class="e" onclick="ev('GC')">GC</button>
+  <button class="e" onclick="ev('1ãã¼')">1ãã¼</button>
+  <button class="e" onclick="ev('æåº')">æåº</button>
+  <button onclick="csv()">CSVä¿å­</button>
+</div>
 
-<input id="bt" placeholder="BT温度">
-<button onclick="save()">記録</button>
+<div class="card">
+  <div class="row">
+    <button class="g" onclick="saveP()">ãã­ãã¡ã¤ã«ä¿å­</button>
+    <select id="plist" class="wide"></select>
+    <button onclick="loadP()">å¼ã³åºã</button>
+    <button class="r" onclick="delP()">åé¤</button>
+    <button class="b" onclick="newP()">æ°è¦çç</button>
+  </div>
+  <div class="small">ãã­ãã¡ã¤ã«ã¯ãã®ç«¯æ«ã®ãã©ã¦ã¶åã«ä¿å­ããã¾ãã</div>
+</div>
 
-<ul id="log"></ul>
+<div class="card"><span class="pill">é»ç· BT</span><span class="pill">ç¹ç· RoR</span><svg id="g" viewBox="0 0 760 280"></svg></div>
+
+<div class="card wrap">
+<table><thead><tr><th>å</th><th>BT</th><th>RoR</th><th>ç«å</th><th>é¢¨é</th><th>ã¤ãã³ã</th><th>ã¡ã¢</th></tr></thead><tbody id="tb"></tbody></table>
+</div>
 
 <script>
-let m=0
-let timer
-
-function start(){
-clearInterval(timer)
-timer=setInterval(()=>{
-m++
-update()
-},60000)
-}
-
-function add(){
-m++
-update()
-}
-
-function update(){
-document.getElementById("time").innerText=m+" min"
-}
-
-function save(){
-let bt=document.getElementById("bt").value
-let li=document.createElement("li")
-li.innerText=m+" min : "+bt+"℃"
-document.getElementById("log").appendChild(li)
-}
+let run=0,t0=0,base=0,timer=0,rows=[];const KEY='rm500_full_profiles_v1';
+function q(x){return document.getElementById(x)}
+function pad(n){return String(n).padStart(2,'0')}
+function fmt(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60)}
+function sec(){return run?base+Math.floor((Date.now()-t0)/1000):base}
+function min(){return Math.floor(sec()/60)}
+function msg(x){q('msg').innerText=x}
+function ensure(n){while(rows.length<=n)rows.push({bt:'',ror:'',pw:'',fan:'',ev:'',note:''})}
+function tick(){q('time').innerText=fmt(sec());ensure(min());draw();render()}
+function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(tick,300);tick();msg('ã¿ã¤ãã¼éå§')}
+function pa(){base=sec();run=0;clearInterval(timer);tick();msg('ä¸æåæ­¢')}
+function rsT(){base=0;run=0;clearInterval(timer);tick();msg('ã¿ã¤ãã¼ãªã»ãã')}
+function addm(){base=(min()+1)*60;tick();msg('+1å')}
+function saveNow(){let i=min();ensure(i);rows[i].bt=q('bt').value;rows[i].ror=q('rr').value;rows[i].pw=q('pw').value;rows[i].fan=q('fan').value;tick();msg(i+'åã«è¨é²')}
+function ev(x){let i=min();ensure(i);rows[i].ev=rows[i].ev?rows[i].ev+'/'+x:x;tick();msg(x+'ãè¨é²')}
+function autoRor(i){let a=parseFloat(rows[i].bt);if(isNaN(a))return'';for(let j=i-1;j>=0;j--){let b=parseFloat(rows[j].bt);if(!isNaN(b))return(a-b)/(i-j)}return''}
+function getRor(i){let m=parseFloat(rows[i].ror);return isNaN(m)?autoRor(i):m}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function render(){let h='';for(let i=0;i<rows.length;i++){let r=rows[i],rr=getRor(i);h+=`<tr><td>${i}</td><td><input type=number step=.1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw()"></td><td><input type=number step=.1 placeholder="${rr===''?'èªå':rr.toFixed(1)}" value="${esc(r.ror)}" oninput="rows[${i}].ror=this.value;draw()"></td><td><input type=number value="${esc(r.pw)}" oninput="rows[${i}].pw=this.value"></td><td><input type=number value="${esc(r.fan)}" oninput="rows[${i}].fan=this.value"></td><td><input style="width:90px" value="${esc(r.ev)}" oninput="rows[${i}].ev=this.value;draw()"></td><td><input style="width:110px" value="${esc(r.note)}" oninput="rows[${i}].note=this.value"></td></tr>`}q('tb').innerHTML=h}
+function draw(){let W=760,H=280,L=45,R=15,T=18,B=34,gw=W-L-R,gh=H-T-B,pts=[],rpts=[];for(let i=0;i<rows.length;i++){let v=parseFloat(rows[i].bt);if(!isNaN(v))pts.push([i,v]);let rv=getRor(i);if(rv!=='')rpts.push([i,rv])}let maxM=Math.max(10,rows.length-1),minT=80,maxT=220;if(pts.length){minT=Math.min(80,Math.floor(Math.min(...pts.map(p=>p[1]))/10)*10);maxT=Math.max(220,Math.ceil(Math.max(...pts.map(p=>p[1]))/10)*10)}let x=i=>L+gw*i/maxM,y=v=>T+gh*(1-(v-minT)/(maxT-minT)),yr=v=>T+gh*(1-v/30);let s=`<rect width="${W}" height="${H}" fill="white"/><path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;for(let k=0;k<=5;k++){let yy=T+gh*k/5,tt=Math.round(maxT-(maxT-minT)*k/5);s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eee"/><text x="5" y="${yy+4}" font-size="12" fill="#666">${tt}</text>`}for(let i=0;i<=maxM;i+=2)s+=`<text x="${x(i)-6}" y="${H-12}" font-size="12" fill="#666">${i}</text>`;if(pts.length){let d=pts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;pts.forEach(p=>s+=`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="#222"/>`)}if(rpts.length){let d=rpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');s+=`<path d="${d}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/><text x="${W-90}" y="18" font-size="12" fill="#888">RoR 0-30</text>`}rows.forEach((r,i)=>{if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#b36b00"/><text transform="translate(${x(i)+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)}</text>`});q('g').innerHTML=s}
+function csv(){let out='è±å,'+q('bean').value+'\næå¥é,'+q('dose').value+'\næå¥æ¸©åº¦,'+q('charge').value+'\nãã­ãã¡ã¤ã«å,'+q('pname').value+'\n\nå,BT,RoR,ç«å,é¢¨é,ã¤ãã³ã,ã¡ã¢\n';rows.forEach((r,i)=>{let rr=getRor(i);out+=[i,r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\n'});let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));a.download=(q('pname').value||'roast_log')+'.csv';a.click();msg('CSVä¿å­')}
+function c(v){v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function profiles(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
+function setP(p){localStorage.setItem(KEY,JSON.stringify(p));refP()}
+function saveP(){let name=q('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');q('pname').value=name;let p=profiles();p[name]={bean:q('bean').value,dose:q('dose').value,charge:q('charge').value,pname:name,rows:rows,base:base};setP(p);msg('ä¿å­:'+name)}
+function loadP(){let name=q('plist').value;if(!name)return;let p=profiles()[name];q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('pname').value=p.pname||name;rows=(p.rows||[]).map(r=>({bt:r.bt||'',ror:r.ror||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));base=p.base||0;run=0;clearInterval(timer);ensure(12);tick();msg('å¼ã³åºã:'+name)}
+function delP(){let name=q('plist').value;if(!name||!confirm(name+'ãåé¤ãã¾ããï¼'))return;let p=profiles();delete p[name];setP(p);msg('åé¤:'+name)}
+function refP(){let p=profiles(),names=Object.keys(p).sort().reverse();q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+function newP(){if(!confirm('æ°è¦ççãéå§ãã¾ããï¼'))return;run=0;base=0;clearInterval(timer);rows=[];['bean','dose','charge','pname','bt','rr','pw','fan'].forEach(id=>q(id).value='');ensure(12);tick();msg('æ°è¦çç')}
+ensure(12);refP();tick();
 </script>
-
-</body>
-</html>
+</body></html>
