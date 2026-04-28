@@ -12,9 +12,9 @@ h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.8;margin-top:4px}
 button{font-size:15px;padding:10px 12px;margin:3px;border:0;border-radius:10px;background:#222;color:#fff}
 button.b{background:#666}button.e{background:#8a4b08}button.g{background:#17633a}button.r{background:#9b1c1c}
 input,select{font-size:15px;padding:8px;margin:3px;border:1px solid #bbb;border-radius:8px;background:#fff}
-input{width:72px}.wide{width:190px}.smallin{width:58px}
+input{width:72px}.wide{width:190px}
 #time{font-size:48px;font-weight:800;text-align:center;margin:8px}
-svg{width:100%;height:310px;background:#fff;border:1px solid #ddd;border-radius:10px}
+svg{width:100%;height:320px;background:#fff;border:1px solid #ddd;border-radius:10px}
 table{width:100%;border-collapse:collapse;background:#fff;min-width:860px}
 th,td{border-bottom:1px solid #eee;padding:6px;text-align:center;font-size:13px}
 td input{width:58px;padding:6px}.wrap{overflow:auto}
@@ -22,12 +22,13 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 .pill{display:inline-block;background:#eee;border-radius:999px;padding:4px 8px;font-size:12px;margin:2px}
 .metric{display:inline-block;min-width:120px;background:#f3f3f3;border-radius:10px;padding:8px;margin:4px;font-size:13px}
 .metric b{font-size:16px}.warn{color:#9b1c1c;font-weight:bold}
+.refbox{background:#eef3ff;border:1px solid #c8d7ff;border-radius:10px;padding:8px;margin-top:8px;font-size:13px}
 </style>
 </head>
 <body>
 <header>
 <h1>RM500 Roast Logger Pro</h1>
-<div class="sub">RM500 manual logger / overlay profile / phase ratio / DTR / RoR analysis</div>
+<div class="sub">Live reference overlay / phase ratio / DTR / RM500 manual profile</div>
 </header>
 
 <div class="card">
@@ -68,13 +69,14 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <div class="row">
     <button class="g" onclick="saveP()">Save Profile</button>
     <select id="plist" class="wide"></select>
-    <button onclick="loadP()">Load</button>
-    <button onclick="overlayP()">Overlay</button>
-    <button class="b" onclick="clearOverlay()">Clear Overlay</button>
+    <button onclick="loadP()">Load as Current</button>
+    <button onclick="setReference()">Set Reference</button>
+    <button class="b" onclick="newWithReference()">New Roast + Keep Ref</button>
+    <button class="b" onclick="clearReference()">Clear Ref</button>
     <button class="r" onclick="delP()">Delete</button>
-    <button class="b" onclick="newP()">New Roast</button>
   </div>
-  <div class="small">Overlay lets you compare the current roast with one saved profile in real time.</div>
+  <div class="refbox" id="refStatus">Reference: none</div>
+  <div class="small">Use Set Reference, then New Roast + Keep Ref. The saved profile stays in the background while the new roast updates live.</div>
 </div>
 
 <div class="card">
@@ -90,11 +92,12 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 
 <div class="card">
   <span class="pill">Black: current BT</span>
-  <span class="pill">Dotted: current RoR</span>
-  <span class="pill">Gray: overlay BT</span>
-  <span class="pill">Orange lines: events</span>
-  <span class="pill">Light guide: target RoR 12/11/10</span>
-  <svg id="g" viewBox="0 0 760 310"></svg>
+  <span class="pill">Black dotted: current RoR</span>
+  <span class="pill">Blue/Gray: reference BT</span>
+  <span class="pill">Light dotted: reference RoR</span>
+  <span class="pill">Orange: current events</span>
+  <span class="pill">Target RoR: 12/11/10</span>
+  <svg id="g" viewBox="0 0 760 320"></svg>
 </div>
 
 <div class="card wrap">
@@ -105,8 +108,9 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </div>
 
 <script>
-let run=0,t0=0,base=0,timer=0,rows=[],overlay=null;
-const KEY='rm500_pro_profiles_v1';
+let run=0,t0=0,base=0,timer=0,rows=[],reference=null,referenceName='';
+const KEY='rm500_pro_profiles_v2';
+const REFKEY='rm500_pro_reference_v2';
 function q(x){return document.getElementById(x)}
 function pad(n){return String(n).padStart(2,'0')}
 function fmt(s){s=Math.floor(s);return pad(Math.floor(s/60))+':'+pad(s%60)}
@@ -121,8 +125,10 @@ function rsT(){base=0;run=0;clearInterval(timer);tick();msg('Timer reset')}
 function addm(){base=(min()+1)*60;tick();msg('+1 min')}
 function saveNow(){let i=min();ensure(i);rows[i].bt=q('bt').value;rows[i].ror=q('rr').value;rows[i].pw=q('pw').value;rows[i].fan=q('fan').value;tick();msg('Saved at '+i+' min')}
 function ev(x){let i=min();ensure(i);rows[i].ev=rows[i].ev?rows[i].ev+'/'+x:x;tick();msg(x+' saved at '+i+' min')}
-function autoRor(i){let a=parseFloat(rows[i].bt);if(isNaN(a))return'';for(let j=i-1;j>=0;j--){let b=parseFloat(rows[j].bt);if(!isNaN(b))return(a-b)/(i-j)}return''}
-function getRor(i){let m=parseFloat(rows[i].ror);return isNaN(m)?autoRor(i):m}
+function autoRorAt(arr,i){let a=parseFloat(arr[i]?.bt);if(isNaN(a))return'';for(let j=i-1;j>=0;j--){let b=parseFloat(arr[j]?.bt);if(!isNaN(b))return(a-b)/(i-j)}return''}
+function autoRor(i){return autoRorAt(rows,i)}
+function getRorFrom(arr,i){let m=parseFloat(arr[i]?.ror);return isNaN(m)?autoRorAt(arr,i):m}
+function getRor(i){return getRorFrom(rows,i)}
 function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 function render(){let h='';for(let i=0;i<rows.length;i++){let r=rows[i],rr=getRor(i);h+=`<tr><td>${i}</td><td><input type=number step=.1 value="${esc(r.bt)}" oninput="rows[${i}].bt=this.value;draw();analysis()"></td><td><input type=number step=.1 placeholder="${rr===''?'auto':rr.toFixed(1)}" value="${esc(r.ror)}" oninput="rows[${i}].ror=this.value;draw();analysis()"></td><td><input type=number value="${esc(r.pw)}" oninput="rows[${i}].pw=this.value"></td><td><input type=number value="${esc(r.fan)}" oninput="rows[${i}].fan=this.value"></td><td><input style="width:100px" value="${esc(r.ev)}" oninput="rows[${i}].ev=this.value;draw();analysis()"></td><td><input style="width:120px" value="${esc(r.note)}" oninput="rows[${i}].note=this.value"></td></tr>`}q('tb').innerHTML=h}
 function eventMin(name, arr=rows){for(let i=0;i<arr.length;i++){if((arr[i].ev||'').includes(name))return i}return null}
@@ -152,36 +158,39 @@ function analysis(){
  }
 }
 function draw(){
- let W=760,H=310,L=45,R=15,T=18,B=34,gw=W-L-R,gh=H-T-B;
- let pts=[],rpts=[],opts=[];
+ let W=760,H=320,L=45,R=15,T=18,B=34,gw=W-L-R,gh=H-T-B;
+ let pts=[],rpts=[],refPts=[],refRpts=[];
  for(let i=0;i<rows.length;i++){let v=parseFloat(rows[i].bt);if(!isNaN(v))pts.push([i,v]);let rv=getRor(i);if(rv!=='')rpts.push([i,rv])}
- if(overlay&&overlay.rows){for(let i=0;i<overlay.rows.length;i++){let v=parseFloat(overlay.rows[i].bt);if(!isNaN(v))opts.push([i,v])}}
- let maxM=Math.max(10,rows.length-1,opts.length?opts[opts.length-1][0]:0),minT=80,maxT=220;
- let all=pts.concat(opts); if(all.length){minT=Math.min(80,Math.floor(Math.min(...all.map(p=>p[1]))/10)*10);maxT=Math.max(220,Math.ceil(Math.max(...all.map(p=>p[1]))/10)*10)}
+ if(reference&&reference.rows){for(let i=0;i<reference.rows.length;i++){let v=parseFloat(reference.rows[i].bt);if(!isNaN(v))refPts.push([i,v]);let rv=getRorFrom(reference.rows,i);if(rv!=='')refRpts.push([i,rv])}}
+ let maxM=Math.max(10,rows.length-1,refPts.length?refPts[refPts.length-1][0]:0),minT=80,maxT=220;
+ let all=pts.concat(refPts); if(all.length){minT=Math.min(80,Math.floor(Math.min(...all.map(p=>p[1]))/10)*10);maxT=Math.max(220,Math.ceil(Math.max(...all.map(p=>p[1]))/10)*10)}
  let x=i=>L+gw*i/maxM,y=v=>T+gh*(1-(v-minT)/(maxT-minT)),yr=v=>T+gh*(1-v/30);
  let s=`<rect width="${W}" height="${H}" fill="white"/><path d="M${L} ${T}V${H-B}H${W-R}" stroke="#aaa" fill="none"/>`;
  for(let k=0;k<=5;k++){let yy=T+gh*k/5,tt=Math.round(maxT-(maxT-minT)*k/5);s+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eee"/><text x="5" y="${yy+4}" font-size="12" fill="#666">${tt}</text>`}
  for(let i=0;i<=maxM;i+=2)s+=`<text x="${x(i)-6}" y="${H-12}" font-size="12" fill="#666">${i}</text>`;
- // target RoR guide 12/11/10
  s+=`<path d="M${x(1)} ${yr(12)} L${x(6)} ${yr(12)} L${x(9)} ${yr(11)} L${x(maxM)} ${yr(10)}" stroke="#ddd" stroke-width="2" stroke-dasharray="3 5" fill="none"/><text x="${W-150}" y="34" font-size="12" fill="#aaa">Target RoR 12/11/10</text>`;
- if(opts.length){let d=opts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');s+=`<path d="${d}" stroke="#aaa" stroke-width="3" fill="none"/>`}
+ if(refPts.length){let d=refPts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');s+=`<path d="${d}" stroke="#8091b3" stroke-width="5" opacity=".45" fill="none"/>`}
+ if(refRpts.length){let d=refRpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');s+=`<path d="${d}" stroke="#9aa8c4" stroke-width="2" stroke-dasharray="2 6" opacity=".65" fill="none"/>`}
  if(pts.length){let d=pts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+y(p[1])).join(' ');s+=`<path d="${d}" stroke="#222" stroke-width="3" fill="none"/>`;pts.forEach(p=>s+=`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="#222"/>`)}
  if(rpts.length){let d=rpts.map((p,i)=>(i?'L':'M')+x(p[0])+' '+yr(Math.max(0,Math.min(30,p[1])))).join(' ');s+=`<path d="${d}" stroke="#888" stroke-width="2" stroke-dasharray="5 4" fill="none"/><text x="${W-90}" y="18" font-size="12" fill="#888">RoR 0-30</text>`}
+ if(reference&&reference.rows){reference.rows.forEach((r,i)=>{if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#8091b3" opacity=".35"/><text transform="translate(${x(i)+2},${H-B-4}) rotate(-90)" font-size="10" fill="#8091b3">${esc(r.ev)}</text>`})}
  rows.forEach((r,i)=>{if(r.ev)s+=`<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#b36b00"/><text transform="translate(${x(i)+4},${T+10}) rotate(90)" font-size="12" fill="#b36b00">${esc(r.ev)}</text>`});
  q('g').innerHTML=s;
 }
-function csv(){let out='Bean,'+q('bean').value+'\\nDose,'+q('dose').value+'\\nCharge Temp,'+q('charge').value+'\\nProfile,'+q('pname').value+'\\n\\nmin,BT,RoR,Power,Fan,Event,Note\\n';rows.forEach((r,i)=>{let rr=getRor(i);out+=[i,r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\\n'});let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));a.download=(q('pname').value||'roast_log')+'.csv';a.click();msg('CSV saved')}
+function csv(){let out='Bean,'+q('bean').value+'\\nDose,'+q('dose').value+'\\nCharge Temp,'+q('charge').value+'\\nProfile,'+q('pname').value+'\\nReference,'+referenceName+'\\n\\nmin,BT,RoR,Power,Fan,Event,Note\\n';rows.forEach((r,i)=>{let rr=getRor(i);out+=[i,r.bt,(rr===''?'':rr.toFixed(1)),r.pw,r.fan,r.ev,r.note].map(c).join(',')+'\\n'});let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv;charset=utf-8'}));a.download=(q('pname').value||'roast_log')+'.csv';a.click();msg('CSV saved')}
 function c(v){v=String(v??'');return /[",\\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function profiles(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
 function setP(p){localStorage.setItem(KEY,JSON.stringify(p));refP()}
 function saveP(){let name=q('pname').value.trim()||new Date().toISOString().slice(0,16).replace('T',' ');q('pname').value=name;let p=profiles();p[name]={bean:q('bean').value,dose:q('dose').value,charge:q('charge').value,targetDrop:q('targetDrop').value,pname:name,rows:rows,base:base};setP(p);msg('Saved: '+name)}
-function loadP(){let name=q('plist').value;if(!name)return;let p=profiles()[name];q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;rows=(p.rows||[]).map(r=>({bt:r.bt||'',ror:r.ror||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));base=p.base||0;run=0;clearInterval(timer);ensure(12);tick();msg('Loaded: '+name)}
-function overlayP(){let name=q('plist').value;if(!name)return;overlay=profiles()[name];draw();msg('Overlay: '+name)}
-function clearOverlay(){overlay=null;draw();msg('Overlay cleared')}
-function delP(){let name=q('plist').value;if(!name||!confirm('Delete '+name+'?'))return;let p=profiles();delete p[name];setP(p);msg('Deleted: '+name)}
+function loadP(){let name=q('plist').value;if(!name)return;let p=profiles()[name];q('bean').value=p.bean||'';q('dose').value=p.dose||'';q('charge').value=p.charge||'';q('targetDrop').value=p.targetDrop||'';q('pname').value=p.pname||name;rows=(p.rows||[]).map(r=>({bt:r.bt||'',ror:r.ror||'',pw:r.pw||'',fan:r.fan||'',ev:r.ev||'',note:r.note||''}));base=p.base||0;run=0;clearInterval(timer);ensure(12);tick();msg('Loaded as current: '+name)}
+function setReference(){let name=q('plist').value;if(!name)return;reference=profiles()[name];referenceName=name;localStorage.setItem(REFKEY,JSON.stringify({name:name,profile:reference}));updateRefStatus();draw();msg('Reference set: '+name)}
+function loadSavedReference(){try{let r=JSON.parse(localStorage.getItem(REFKEY)||'null');if(r&&r.profile){reference=r.profile;referenceName=r.name||'reference'}}catch(e){} updateRefStatus()}
+function updateRefStatus(){q('refStatus').innerText=reference?'Reference: '+referenceName:'Reference: none'}
+function clearReference(){reference=null;referenceName='';localStorage.removeItem(REFKEY);updateRefStatus();draw();msg('Reference cleared')}
+function newWithReference(){if(!confirm('Start new roast while keeping the reference graph?'))return;run=0;base=0;clearInterval(timer);rows=[];['bean','dose','charge','targetDrop','pname','bt','rr','pw','fan'].forEach(id=>q(id).value='');ensure(12);tick();msg('New roast with reference')}
+function delP(){let name=q('plist').value;if(!name||!confirm('Delete '+name+'?'))return;let p=profiles();delete p[name];setP(p);if(referenceName===name)clearReference();msg('Deleted: '+name)}
 function refP(){let p=profiles(),names=Object.keys(p).sort().reverse();q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}
-function newP(){if(!confirm('Start new roast?'))return;run=0;base=0;clearInterval(timer);rows=[];overlay=null;['bean','dose','charge','targetDrop','pname','bt','rr','pw','fan'].forEach(id=>q(id).value='');ensure(12);tick();msg('New roast')}
-ensure(12);refP();tick();
+ensure(12);refP();loadSavedReference();tick();
 </script>
 </body>
 </html>
