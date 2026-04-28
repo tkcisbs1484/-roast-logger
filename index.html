@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RM500 ローストロガー Pro v8</title>
+<title>RM500 ローストロガー Pro v11</title>
 <style>
 body{margin:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;color:#222}
 header{background:#222;color:#fff;padding:16px}
@@ -28,8 +28,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
 </head>
 <body>
 <header>
-<h1>RM500 ローストロガー Pro v8</h1>
-<div class="sub">軽量版 / BT 1刻み / ±10秒 / 手入力1分ごと / RoR自動計算修正</div>
+<h1>RM500 ローストロガー Pro v11</h1>
+<div class="sub">軽量版 / BT 1刻み / ±10秒長押し連打 / 手入力1分ごと</div>
 </header>
 
 <div class="card">
@@ -45,8 +45,8 @@ td input{width:58px;padding:6px}.wrap{overflow:auto}
   <button onclick="st()">スタート</button>
   <button class="b" onclick="pa()">一時停止</button>
   <button class="b" onclick="rsT()">タイマーリセット</button>
-  <button onclick="add10s()">+10秒</button>
-  <button onclick="sub10s()">-10秒</button>
+  <button id="plus10Btn" onclick="add10s()">+10秒</button>
+  <button id="minus10Btn" onclick="sub10s()">-10秒</button>
   <div id="msg" class="small">準備OK</div>
 </div>
 
@@ -139,8 +139,18 @@ function fullUpdate(){
 function st(){if(run)return;run=1;t0=Date.now();clearInterval(timer);timer=setInterval(lightUpdate,500);fullUpdate();msg('タイマー開始')}
 function pa(){base=sec();run=0;clearInterval(timer);fullUpdate();msg('一時停止')}
 function rsT(){base=0;run=0;clearInterval(timer);fullUpdate();msg('タイマーをリセットしました')}
-function add10s(){base=curSlot()+10;if(run)t0=Date.now();fullUpdate();msg('+10秒しました')}
-function sub10s(){base=Math.max(0,curSlot()-10);if(run)t0=Date.now();fullUpdate();msg('-10秒しました')}
+function add10s(){
+  base = sec() + 10;
+  if(run) t0 = Date.now();
+  fullUpdate();
+  msg('+10秒しました');
+}
+function sub10s(){
+  base = Math.max(0, sec() - 10);
+  if(run) t0 = Date.now();
+  fullUpdate();
+  msg('-10秒しました');
+}
 
 function saveNow(){
   let r=currentRow();
@@ -396,12 +406,48 @@ function refP(){
  q('plist').innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 
+function setupHoldButton(id, action){
+  const btn = q(id);
+  if(!btn) return;
+  let holdTimer = null;
+  let repeatTimer = null;
+
+  function startHold(e){
+    e.preventDefault();
+    action();
+    clearTimeout(holdTimer);
+    clearInterval(repeatTimer);
+    holdTimer = setTimeout(()=>{
+      repeatTimer = setInterval(action, 160);
+    }, 350);
+  }
+
+  function stopHold(){
+    clearTimeout(holdTimer);
+    clearInterval(repeatTimer);
+    holdTimer = null;
+    repeatTimer = null;
+  }
+
+  btn.addEventListener('mousedown', startHold);
+  btn.addEventListener('mouseup', stopHold);
+  btn.addEventListener('mouseleave', stopHold);
+  btn.addEventListener('touchstart', startHold, {passive:false});
+  btn.addEventListener('touchend', stopHold);
+  btn.addEventListener('touchcancel', stopHold);
+}
+
 function initMinuteRows(maxMin=12){
   for(let m=0;m<=maxMin;m++){
     ensureTime(m*60);
   }
 }
-initMinuteRows(12);refP();loadSavedReference();fullUpdate();
+initMinuteRows(12);
+refP();
+loadSavedReference();
+fullUpdate();
+setupHoldButton('plus10Btn', add10s);
+setupHoldButton('minus10Btn', sub10s);
 </script>
 </body>
 </html>
