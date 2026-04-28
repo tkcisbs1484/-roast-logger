@@ -2,15 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roast Logger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RM500 Roast Logger</title>
 <style>
-body{font-family:sans-serif;padding:20px}
-button{font-size:16px;padding:10px;margin:5px}
-#time{font-size:40px;margin:10px}
+body{font-family:sans-serif;padding:20px;background:#f5f5f5}
+h2{margin-bottom:10px}
+#time{font-size:40px;margin:10px 0}
+button{font-size:16px;padding:10px;margin:5px;border:none;border-radius:8px;background:#333;color:#fff}
+input{padding:8px;font-size:16px}
 </style>
 </head>
-
 <body>
 
 <h2>ローストロガー</h2>
@@ -22,7 +23,7 @@ button{font-size:16px;padding:10px;margin:5px}
 
 <br><br>
 
-<input id="bt" placeholder="BT">
+<input id="bt" placeholder="BT温度">
 <button onclick="save()">記録</button>
 
 <ul id="log"></ul>
